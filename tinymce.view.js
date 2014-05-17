@@ -4,8 +4,9 @@
  */
 tinymce.PluginManager.add( 'wpview', function( editor ) {
 	var selected,
-		VK = tinymce.util.VK,
+		Env = tinymce.Env,
 		TreeWalker = tinymce.dom.TreeWalker,
+		VK = tinymce.util.VK,
 		toRemove = false;
 
 	function getParentView( node ) {
@@ -24,7 +25,7 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 
 	function createPadNode() {
 		return editor.dom.create( 'p', { 'data-wpview-pad': 1 },
-			( tinymce.Env.ie && tinymce.Env.ie < 11 ) ? '' : '<br data-mce-bogus="1" />' );
+			( Env.ie && Env.ie < 11 ) ? '' : '<br data-mce-bogus="1" />' );
 	}
 
 	/**
@@ -289,7 +290,7 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 				event.stopPropagation();
 
 				// Hack to try and keep the block resize handles from appearing. They will show on mousedown and then be removed on mouseup.
-				if ( tinymce.Env.ie <= 10 ) {
+				if ( Env.ie <= 10 ) {
 					deselect();
 				}
 
@@ -309,7 +310,7 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 
 				// Fix issue with deselecting a view in IE8. Without this hack, clicking content above the view wouldn't actually deselect it
 				// and the caret wouldn't be placed at the mouse location
-				if ( tinymce.Env.ie && tinymce.Env.ie <= 8 ) {
+				if ( Env.ie && Env.ie <= 8 ) {
 					deselectEventType = 'mouseup';
 				} else {
 					deselectEventType = 'mousedown';
@@ -357,8 +358,10 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 	});
 
 	editor.on( 'keydown', function( event ) {
-		var keyCode = event.keyCode,
+		var dom = editor.dom,
 			body = editor.getBody(),
+			keyCode = event.keyCode,
+			selection = editor.selection,
 			view, padNode;
 
 		// If a view isn't selected, let the event go on its merry way.
@@ -375,7 +378,7 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 			return;
 		}
 
-		view = getParentView( editor.selection.getNode() );
+		view = getParentView( selection.getNode() );
 
 		// If the caret is not within the selected view, deselect the
 		// view and bail.
@@ -394,11 +397,11 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 			} else if ( ! view.previousSibling ) {
 				padNode = createPadNode();
 				body.insertBefore( padNode, body.firstChild );
-				editor.selection.setCursorLocation( body.firstChild, 0 );
+				selection.setCursorLocation( body.firstChild, 0 );
 			// Handle default case
 			} else {
-				editor.selection.select( view.previousSibling, true );
-				editor.selection.collapse();
+				selection.select( view.previousSibling, true );
+				selection.collapse();
 			}
 		} else if ( keyCode === VK.RIGHT || keyCode === VK.DOWN ) {
 			deselect();
@@ -409,14 +412,28 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 			} else if ( ! view.nextSibling ) {
 				padNode = createPadNode();
 				body.appendChild( padNode );
-				editor.selection.setCursorLocation( body.lastChild, 0 );
+				selection.setCursorLocation( body.lastChild, 0 );
 			// Handle default case where the next node is a non-wpview
 			} else {
-				editor.selection.setCursorLocation( view.nextSibling, 0 );
+				selection.setCursorLocation( view.nextSibling, 0 );
 			}
+		// Create a new paragraph when pressing enter/return.
+		} else if ( keyCode === VK.ENTER ) {
+			if ( dom.isEmpty( view.nextSibling ) && view.nextSibling.nodeName === 'P' ) {
+				padNode = view.nextSibling;
+			} else {
+				padNode = dom.create( 'p' );
+				// BR is needed in empty blocks on non IE browsers.
+				if ( ! ( Env.ie && Env.ie < 11 ) ) {
+					padNode.innerHTML = '<br data-mce-bogus="1">';
+				}
+				dom.insertAfter( padNode, selected );
+			}
+			deselect();
+			selection.setCursorLocation( padNode, 0 );
+		// If delete or backspace is pressed, delete the view.
 		} else if ( keyCode === VK.DELETE || keyCode === VK.BACKSPACE ) {
-			// If delete or backspace is pressed, delete the view.
-			editor.dom.remove( selected );
+			dom.remove( selected );
 		}
 
 		event.preventDefault();
