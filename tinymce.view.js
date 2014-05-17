@@ -357,6 +357,7 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 		}
 	});
 
+    // Handle key presses for selected views.
 	editor.on( 'keydown', function( event ) {
 		var dom = editor.dom,
 			body = editor.getBody(),
@@ -369,19 +370,24 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 			return;
 		}
 
-		// Let keypresses that involve the command or control keys through.
+		// Let key presses that involve the command or control keys through.
 		// Also, let any of the F# keys through.
 		if ( event.metaKey || event.ctrlKey || ( keyCode >= 112 && keyCode <= 123 ) ) {
-			if ( ( event.metaKey || event.ctrlKey ) && keyCode === 88 ) {
-				toRemove = selected;
+			// But remove the view when cmd/ctrl + x/backspace are pressed.
+			if ( ( event.metaKey || event.ctrlKey ) && ( keyCode === 88 || keyCode === VK.BACKSPACE ) ) {
+				// We'll remove a cut view on keyup, otherwise the browser can't copy the content.
+				if ( keyCode === 88 ) {
+					toRemove = selected;
+				} else {
+					editor.dom.remove( selected );
+				}
 			}
 			return;
 		}
 
 		view = getParentView( selection.getNode() );
 
-		// If the caret is not within the selected view, deselect the
-		// view and bail.
+		// If the caret is not within the selected view, deselect the view and bail.
 		if ( view !== selected ) {
 			deselect();
 			return;
@@ -439,7 +445,7 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 		event.preventDefault();
 	});
 
-	// Select views when arrow keys are used to navigate the content of the editor.
+	// (De)select views when arrow keys are used to navigate the content of the editor.
 	editor.on( 'keydown', function( event ) {
 		var keyCode = event.keyCode,
 			dom = editor.dom,
@@ -501,6 +507,7 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 			body = editor.getBody(),
 			range;
 
+		// Remove views that were cut and marked for removal on keydown.
 		if ( toRemove ) {
 			editor.dom.remove( toRemove );
 			toRemove = false;
