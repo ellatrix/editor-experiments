@@ -15,11 +15,11 @@ tinymce.PluginManager.add( 'scroll', function( editor ) {
 	editor.on( 'init', function() {
 
 		var $window = $( window ),
+			$adminBar = $( '#wpadminbar' ),
 			$top = $( '.mce-toolbar-grp' ),
 			$bottom = $( '#post-status-info' ),
 			$editor = $( '.mce-edit-area' ),
 			statusBarHeight = $( '.mce-statusbar:visible' ).outerHeight(),
-			adminBarHeight = 32,
 			fixedTop = false,
 			fixedBottom = false;
 
@@ -41,6 +41,7 @@ tinymce.PluginManager.add( 'scroll', function( editor ) {
 
 			var windowPos = $window.scrollTop(),
 				windowHeight = $window.height(),
+				adminBarHeight = $adminBar.height(),
 				topPos = $top.parent().offset().top,
 				topHeight = $top.outerHeight(),
 				bottomHeight = $bottom.outerHeight(),
