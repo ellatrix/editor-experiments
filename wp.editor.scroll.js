@@ -18,6 +18,7 @@
 			$textEditor = $( '#content' ),
 			$textEditorClone = $( '<div id="content-clone"></div>' ),
 			$bottom = $( '#post-status-info' ),
+			$toFade = $( '#adminmenuwrap, #wp-toolbar, .postbox:visible, div.updated:visible, div.error:visible, .wrap h2, #screen-meta-links, #wpfooter' ),
 			fullscreen = window.wp.editor.fullscreen,
 			editorInstance,
 			statusBarHeight = 0,
@@ -230,6 +231,17 @@
 		}
 
 		textEditorResize();
+
+		// Fade out surrounding elements.
+		$( '#post-body-content' ).hoverIntent( {
+			over: function() {
+				$toFade.fadeTo( 'slow' , 0.1 );
+			},
+			out: function() {
+				$toFade.fadeTo( 'slow' , 1 );
+			},
+			timeout: 500
+		} );
 
 	} );
 

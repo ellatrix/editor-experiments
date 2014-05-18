@@ -71,7 +71,7 @@ if ( is_admin() && ! class_exists( 'Editor_Experiments' ) ) {
 			if ( ! empty( $args['tinymce'] ) ) {
 
 				wp_enqueue_style( 'wp-editor-scroll', plugins_url( 'wp.editor.scroll.css', __FILE__ ) );
-				wp_enqueue_script( 'wp-editor-scroll', plugins_url( 'wp.editor.scroll.js', __FILE__ ), array( 'jquery' ), false, true );
+				wp_enqueue_script( 'wp-editor-scroll', plugins_url( 'wp.editor.scroll.js', __FILE__ ), array( 'jquery', 'hoverIntent' ), false, true );
 
 			}
 		}
