@@ -9,7 +9,7 @@ body {
 	overflow-y: visible!important;
 }
 
-/* Makes all prargrphs visible. */
+/* Makes all paragraphs visible. */
 p:empty {
 	min-height: 20px;
 }
@@ -27,6 +27,31 @@ p:empty {
 	box-sizing: border-box;
 	outline: 2px dashed #aaa;
 	outline-offset: 5px;
+}
+
+.wpview-wrap .toolbar .remove {
+	/*display: none;*/
+}
+
+.wpview-wrap .toolbar {
+	left: -38px;
+}
+
+.wpview-wrap .toolbar div {
+	background: none;
+	box-shadow: none;
+	display: block;
+	margin: 0;
+	opacity: 0.5;
+	padding: 0;
+	-webkit-transition: opacity 0.1s ease-in 0;
+    transition: opacity 0.1s ease-in 0;
+}
+
+.wpview-wrap .toolbar div:hover {
+	background: none;
+	box-shadow: none;
+	opacity: 1;
 }
 
 .gallery {
