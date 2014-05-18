@@ -15,12 +15,13 @@ p:empty {
 }
 
 .wpview-wrap {
-	background: none;
 	border: none;
 	width: 100%;
 }
 
 .wpview-wrap.selected {
+	background: none;
+	border: none;
 	-webkit-box-sizing: border-box;
 	-moz-box-sizing: border-box;
 	box-sizing: border-box;
