@@ -2,7 +2,7 @@
 
 tinymce.PluginManager.add( 'general', function( editor ) {
 
-	var colors = [];
+	var colors = [], styleElement;
 
 	// Remove spaces from empty paragraphs.
 	editor.on( 'BeforeSetContent', function( event ) {
@@ -38,9 +38,18 @@ tinymce.PluginManager.add( 'general', function( editor ) {
 				style += color.selector + '{' + color.property + ':rgba(' + r + ',' + b + ',' + g + ',' + color.opacity + ');}';
 			} );
 		} );
-		style = editor.dom.create( 'style', { 'type': 'text/css' }, style );
 
-		editor.getDoc().head.appendChild( style );
+		if ( styleElement ) {
+
+			editor.dom.setHTML( styleElement, style );
+
+		} else {
+
+			styleElement = editor.dom.create( 'style', { type: 'text/css' }, style );
+
+			editor.getDoc().head.appendChild( styleElement );
+
+		}
 
 	}
 
