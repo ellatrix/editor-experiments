@@ -60,6 +60,7 @@ if ( is_admin() && ! class_exists( 'Editor_Experiments' ) ) {
 			$plugins['wpview'] = plugins_url( 'tinymce.view.js', __FILE__ );
 			$plugins['wpeditimage'] = plugins_url( 'tinymce.image.js', __FILE__ );
 			$plugins['wpgallery'] = plugins_url( 'tinymce.gallery.js', __FILE__ );
+			$plugins['general'] = plugins_url( 'tinymce.general.js', __FILE__ );
 
 			return $plugins;
 
