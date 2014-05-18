@@ -22,6 +22,7 @@
 			fullscreen = window.wp.editor.fullscreen,
 			editorInstance,
 			statusBarHeight = 0,
+			windowHeight = $window.height(),
 			fixedTop = false,
 			fixedBottom = false;
 
@@ -58,6 +59,8 @@
 
 			if ( hiddenHeight === textEditorHeight ) {
 				return;
+			} else if ( hiddenHeight < windowHeight ) {
+				hiddenHeight = windowHeight;
 			}
 
 			$textEditor.height( hiddenHeight );
@@ -77,7 +80,11 @@
 			// Copy the editor instance.
 			editorInstance = editor;
 
+			// Resizing will be handled by the autoresize plugin.
 			editor.theme.resizeTo = function() {};
+
+			// Set the minimum height to the initial viewport height.
+			editor.settings.autoresize_min_height = windowHeight;
 
 			// Get the necessary UI elements.
 			statusBarHeight = $( '.mce-statusbar:visible' ).outerHeight();
@@ -132,7 +139,6 @@
 			}
 
 			var windowPos = $window.scrollTop(),
-				windowHeight = $window.height(),
 				adminBarHeight = $adminBar.height(),
 				bottomHeight = $bottom.outerHeight(),
 				$top, $editor, visual,
@@ -165,6 +171,7 @@
 			editorPos = $editor.offset().top;
 			editorHeight = $editor.outerHeight();
 			editorWidth = $editor.outerWidth();
+			windowHeight = $window.height();
 
 			// Maybe adjust the top bar.
 			if ( ( ! fixedTop || eventType === 'resize' ) &&
