@@ -245,7 +245,10 @@
 				$toFade.fadeTo( 'slow' , 0.1 );
 			},
 			out: function() {
-				$toFade.fadeTo( 'slow' , 1 );
+				var panels = $( '.mce-popover, .mce-menu' );
+				if ( ! panels.length || ( panels.length && ! panels.is( ':visible' ) ) ) {
+					$toFade.fadeTo( 'slow' , 1 );
+				};
 			},
 			timeout: 500
 		} );
