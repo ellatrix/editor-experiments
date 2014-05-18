@@ -57,7 +57,6 @@ if ( is_admin() && ! class_exists( 'Editor_Experiments' ) ) {
 		function mce_external_plugins( $plugins ) {
 
 			$plugins['autoresize'] = plugins_url( 'tinymce.autoresize.js', __FILE__ );
-			$plugins['scroll'] = plugins_url( 'tinymce.scroll.js', __FILE__ );
 			$plugins['wpview'] = plugins_url( 'tinymce.view.js', __FILE__ );
 			$plugins['wpeditimage'] = plugins_url( 'tinymce.image.js', __FILE__ );
 			$plugins['wpgallery'] = plugins_url( 'tinymce.gallery.js', __FILE__ );
@@ -70,7 +69,8 @@ if ( is_admin() && ! class_exists( 'Editor_Experiments' ) ) {
 
 			if ( ! empty( $args['tinymce'] ) ) {
 
-				wp_enqueue_style( 'tinymce-scroll', plugins_url( 'tinymce.scroll.css', __FILE__ ) );
+				wp_enqueue_style( 'wp-editor-scroll', plugins_url( 'wp.editor.scroll.css', __FILE__ ) );
+				wp_enqueue_script( 'wp-editor-scroll', plugins_url( 'wp.editor.scroll.js', __FILE__ ), array( 'jquery' ), false, true );
 
 			}
 		}
@@ -98,7 +98,7 @@ if ( is_admin() && ! class_exists( 'Editor_Experiments' ) ) {
 		function admin_enqueue_scripts() {
 
 			wp_deregister_script( 'mce-view' );
-			wp_register_script( 'mce-view', plugins_url( 'wp.mce.view.js', __FILE__ ), array( 'shortcode', 'media-models', 'media-audiovideo', 'wp-playlist' ), false, 1 );
+			wp_register_script( 'mce-view', plugins_url( 'wp.mce.view.js', __FILE__ ), array( 'shortcode', 'media-models', 'media-audiovideo', 'wp-playlist' ), false, true );
 
 		}
 

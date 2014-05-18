@@ -17,3 +17,7 @@ div.mce-toolbar-grp > div {
 .mce-statusbar {
 	display: none;
 }
+
+#post-status-info {
+	z-index: 1;
+}
