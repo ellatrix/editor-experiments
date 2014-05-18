@@ -96,6 +96,11 @@
 				adjust( 'resize' );
 			} );
 
+			// Adjust when the editor resizes.
+			editor.on( 'nodechange setcontent keyup FullscreenStateChanged', function() {
+				adjust( 'resize' );
+			} );
+
 			// And adjust immediately.
 			setTimeout( function() {
 				adjust( 'resize' );
