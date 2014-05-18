@@ -29,12 +29,14 @@ p:empty {
 	outline-offset: 5px;
 }
 
-.wpview-wrap .toolbar .remove {
-	/*display: none;*/
-}
-
 .wpview-wrap .toolbar {
 	left: -38px;
+	top: -5px;
+}
+
+.wpview-type-audio .toolbar {
+	top: -5px;
+	bottom: auto;
 }
 
 .wpview-wrap .toolbar div {
