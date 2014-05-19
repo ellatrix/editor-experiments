@@ -30,8 +30,9 @@ module.exports = function( grunt ) {
 				}
 			},
 			files: [
-				'*.js',
-				'!tinymce.autoresize.js'
+				'**/*.js',
+				'!**/tinymce.autoresize.js',
+				'!node_modules/**/*.js'
 			]
 		}
 	});

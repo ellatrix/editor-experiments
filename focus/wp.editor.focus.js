@@ -248,7 +248,7 @@
 				var panels = $( '.mce-popover, .mce-menu' );
 				if ( ! panels.length || ( panels.length && ! panels.is( ':visible' ) ) ) {
 					$toFade.fadeTo( 'slow' , 1 );
-				};
+				}
 			},
 			timeout: 500
 		} );

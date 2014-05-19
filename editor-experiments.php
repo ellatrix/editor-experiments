@@ -34,7 +34,7 @@ if ( is_admin() && ! class_exists( 'Editor_Experiments' ) ) {
 
 			$css = explode( ',', $css );
 
-			array_push( $css, plugins_url( '/content.css?ver=' . urlencode( time() ), __FILE__ ) );
+			array_push( $css, plugins_url( 'tinymce.content.css?ver=' . urlencode( time() ), __FILE__ ) );
 
 			return implode( ',', $css );
 
@@ -56,7 +56,6 @@ if ( is_admin() && ! class_exists( 'Editor_Experiments' ) ) {
 
 		function mce_external_plugins( $plugins ) {
 
-			$plugins['autoresize'] = plugins_url( 'tinymce.autoresize.js', __FILE__ );
 			$plugins['wpview'] = plugins_url( 'tinymce.view.js', __FILE__ );
 			$plugins['wpeditimage'] = plugins_url( 'tinymce.image.js', __FILE__ );
 			$plugins['wpgallery'] = plugins_url( 'tinymce.gallery.js', __FILE__ );
@@ -69,9 +68,6 @@ if ( is_admin() && ! class_exists( 'Editor_Experiments' ) ) {
 		function wp_enqueue_editor( $args ) {
 
 			if ( ! empty( $args['tinymce'] ) ) {
-
-				wp_enqueue_style( 'wp-editor-scroll', plugins_url( 'wp.editor.scroll.css', __FILE__ ) );
-				wp_enqueue_script( 'wp-editor-scroll', plugins_url( 'wp.editor.scroll.js', __FILE__ ), array( 'jquery', 'hoverIntent' ), false, true );
 
 			}
 		}
@@ -90,8 +86,6 @@ if ( is_admin() && ! class_exists( 'Editor_Experiments' ) ) {
 
 		function tiny_mce_before_init( $init ) {
 
-			$init['resize'] = false;
-
 			return $init;
 
 		}
@@ -108,3 +102,5 @@ if ( is_admin() && ! class_exists( 'Editor_Experiments' ) ) {
 	new Editor_Experiments;
 
 }
+
+// require_once( 'focus/focus.php' );
