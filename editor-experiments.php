@@ -103,4 +103,4 @@ if ( is_admin() && ! class_exists( 'Editor_Experiments' ) ) {
 
 }
 
-// require_once( 'focus/focus.php' );
+require_once( 'focus/focus.php' );
