@@ -1,0 +1,23 @@
+div.mce-toolbar-grp {
+	padding: 0;
+}
+
+div.mce-toolbar-grp > div {
+	padding: 3px;
+}
+
+#content-resize-handle {
+	display: none;
+}
+
+.autosave-info {
+	padding: 2px 10px;
+}
+
+.mce-statusbar {
+	display: none;
+}
+
+#post-status-info {
+	z-index: 1;
+}
