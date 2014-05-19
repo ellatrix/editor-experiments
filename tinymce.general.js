@@ -63,7 +63,7 @@ tinymce.PluginManager.add( 'general', function( editor ) {
 
 	}
 
-	addUIColor( '.wpview-wrap.selected', 'outline-color', '0.5' );
+	addUIColor( '.wpview-wrap.selected:before', 'outline-color', '0.5' );
 	addUIColor( '.wpview-wrap .toolbar div,.wpview-wrap .toolbar div:hover', 'color', '1' );
 
 	return {
