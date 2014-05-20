@@ -93,11 +93,12 @@ tinymce.PluginManager.add( 'wordpress', function( editor ) {
 
 	// Replace more and nexpage shortcodes with html comments.
 	editor.on( 'wpAfterRemoveViews', function( event ) {
-		event.content = event.content.replace(/\[wp_more text="(.*?)"\]/g, function( match, text ) {
-			return '<!--more ' + text.trim() + '-->';
+		event.content = event.content.replace( /\[wp_more text="(.*?)"\]/g, function( match, text ) {
+			return '<!--more' + ( text.trim() ? ' ' + text.trim() : '' ) + '-->';
 		} );
-		event.content = event.content.replace(/\[wp_nextpage\]/g, '<!--nextpage-->' );
-	});
+		event.content = event.content.replace( /\[wp_more\]/g, '<!--more-->' );
+		event.content = event.content.replace( /\[wp_nextpage\]/g, '<!--nextpage-->' );
+	} );
 
 	// Register commands
 	editor.addCommand( 'WP_More', function( tag ) {
