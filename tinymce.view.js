@@ -289,6 +289,8 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 			if ( view ) {
 				event.stopPropagation();
 
+				editor.plugins.insert.removeElement();
+
 				// Hack to try and keep the block resize handles from appearing. They will show on mousedown and then be removed on mouseup.
 				if ( Env.ie <= 10 ) {
 					deselect();

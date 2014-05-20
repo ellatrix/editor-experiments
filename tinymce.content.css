@@ -58,7 +58,8 @@ p:empty {
 	opacity: 0.5;
 	padding: 0;
 	-webkit-transition: opacity 0.1s ease-in 0;
-    transition: opacity 0.1s ease-in 0;
+	-moz-transition: opacity 0.1s ease-in 0;
+	transition: opacity 0.1s ease-in 0;
 }
 
 .wpview-wrap .toolbar div:hover {
@@ -70,4 +71,34 @@ p:empty {
 .gallery {
 	margin: 0;
 	padding: 0;
+}
+
+#wp-insert-block {
+	position: absolute;
+	z-index: 100;
+	opacity: 0.5;
+	cursor: pointer;
+	-webkit-transition: opacity 0.1s ease-in 0;
+	-moz-transition: opacity 0.1s ease-in 0;
+	transition: opacity 0.1s ease-in 0;
+}
+
+#wp-insert-block,
+#wp-insert-block:before,
+#wp-insert-block:after {
+	margin: 0;
+	padding: 0;
+	background: none;
+	content: '';
+}
+
+#wp-insert-block .dashicons {
+	font-size: inherit;
+	line-height: inherit;
+	height: inherit;
+	width: 24px;
+}
+
+#wp-insert-block:hover {
+	opacity: 1;
 }
