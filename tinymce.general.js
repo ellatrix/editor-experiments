@@ -35,7 +35,7 @@ tinymce.PluginManager.add( 'general', function( editor ) {
 		detectedColor = editor.dom.getStyle( editor.getBody(), 'color', true );
 		detectedColor = detectedColor.replace( /rgb\s*\(\s*([0-9]+)\s*,\s*([0-9]+)\s*,\s*([0-9]+)\s*\)/gi, function( match, r, g, b ) {
 			tinymce.each( colors, function( color ) {
-				style += color.selector + '{' + color.property + ':rgba(' + r + ',' + b + ',' + g + ',' + color.opacity + ');}';
+				style += color.selector + '{' + color.property + ':rgba(' + r + ',' + g + ',' + b + ',' + color.opacity + ');}';
 			} );
 		} );
 
@@ -65,6 +65,17 @@ tinymce.PluginManager.add( 'general', function( editor ) {
 
 	addUIColor( '.wpview-wrap[data-mce-selected]:before', 'outline-color', '0.5' );
 	addUIColor( '.wpview-wrap .toolbar div,.wpview-wrap .toolbar div:hover', 'color', '1' );
+	addUIColor( '#wp-insert-block', 'color', '0.5' );
+	addUIColor( '#wp-insert-block:hover', 'color', '1' );
+	addUIColor( '.wpview-type-more span:before,.wpview-type-more span:after', 'border-bottom-color', '0.5' );
+	addUIColor( '.wpview-type-more span', 'color', '0.5' );
+	addUIColor( '.wpview-type-more[data-mce-selected] span:before,.wpview-type-more[data-mce-selected] span:after', 'border-bottom-color', '1' );
+	addUIColor( '.wpview-type-more[data-mce-selected] span', 'color', '1' );
+	addUIColor( '.wpview-type-nextpage span:before,.wpview-type-nextpage span:after', 'border-bottom-color', '0.5' );
+	addUIColor( '.wpview-type-nextpage span', 'color', '0.5' );
+	addUIColor( '.wpview-type-nextpage[data-mce-selected] span:before,.wpview-type-nextpage[data-mce-selected] span:after', 'border-bottom-color', '1' );
+	addUIColor( '.wpview-type-nextpage[data-mce-selected] span', 'color', '1' );
+	addUIColor( '.wpview-error', 'color', '0.5' );
 
 	return {
 		setUIColors: setUIColors,

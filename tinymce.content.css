@@ -7,7 +7,7 @@ body {
 	margin-left: auto;
 	margin-right: auto;
 	max-width: 100%;
-	overflow-y: visible !important;
+	overflow: visible !important;
 	padding: 0 !important;
 }
 
@@ -18,15 +18,15 @@ p:empty {
 
 .wpview-wrap {
 	border: none;
+	-webkit-box-sizing: border-box;
+	-moz-box-sizing: border-box;
+	box-sizing: border-box;
 	width: 100%;
 }
 
 .wpview-wrap[data-mce-selected] {
 	background: none;
 	border: none;
-	-webkit-box-sizing: border-box;
-	-moz-box-sizing: border-box;
-	box-sizing: border-box;
 	position: relative;
 }
 
@@ -78,6 +78,10 @@ p:empty {
 	display: block;
 }
 
+.wpview-error {
+	border: none;
+}
+
 .gallery {
 	margin: 0;
 	padding: 0;
@@ -86,11 +90,10 @@ p:empty {
 #wp-insert-block {
 	position: absolute;
 	z-index: 100;
-	opacity: 0.5;
 	cursor: pointer;
-	-webkit-transition: opacity 0.1s ease-in 0;
-	-moz-transition: opacity 0.1s ease-in 0;
-	transition: opacity 0.1s ease-in 0;
+	-webkit-transition: color 0.1s ease-in 0;
+	-moz-transition: color 0.1s ease-in 0;
+	transition: color 0.1s ease-in 0;
 }
 
 #wp-insert-block,
@@ -107,8 +110,40 @@ p:empty {
 	line-height: inherit;
 	height: inherit;
 	width: 24px;
+	transition: none;
 }
 
-#wp-insert-block:hover {
-	opacity: 1;
+.wpview-type-more p,
+.wpview-type-nextpage p {
+	text-align: center;
+	position: relative;
+	overflow: hidden;
+}
+
+.wpview-type-more span,
+.wpview-type-nextpage span {
+	position: relative;
+}
+
+.wpview-type-more span:before,
+.wpview-type-more span:after,
+.wpview-type-nextpage span:before,
+.wpview-type-nextpage span:after {
+	content: '';
+	position: absolute;
+	border-bottom: 2px dashed #eee;
+	top: 50%;
+	width: 1000px;
+}
+
+.wpview-type-more span:before,
+.wpview-type-nextpage span:before {
+	right: 100%;
+	margin-right: 5px;
+}
+
+.wpview-type-more span:after,
+.wpview-type-nextpage span:after {
+	left: 100%;
+	margin-left: 5px;
 }

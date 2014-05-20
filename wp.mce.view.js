@@ -690,4 +690,30 @@ window.wp = window.wp || {};
 		View: wp.mce.media.PlaylistView
 	} );
 	wp.mce.views.register( 'playlist', wp.mce.playlist );
+
+	wp.mce.more = {
+		shortcode: 'wp_more',
+		toView: wp.mce.gallery.toView,
+		View: wp.mce.View.extend( {
+			text: 'MORE',
+			getHtml: function() {
+				return '<div class="toolbar"><div class="dashicons dashicons-no-alt remove"></div></div><p><span>MORE</span></p>';
+			}
+		} )
+	};
+
+	wp.mce.views.register( 'more', wp.mce.more );
+
+	wp.mce.nextpage = {
+		shortcode: 'wp_nextpage',
+		toView: wp.mce.gallery.toView,
+		View: wp.mce.View.extend( {
+			getHtml: function() {
+				return '<div class="toolbar"><div class="dashicons dashicons-no-alt remove"></div></div><p><span>NEXT PAGE</span></p>';
+			}
+		} )
+	};
+
+	wp.mce.views.register( 'nextpage', wp.mce.nextpage );
+
 }(jQuery));

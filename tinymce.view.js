@@ -166,6 +166,8 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 			wp.mce.views.unbind( editor );
 		}
 
+		editor.fire( 'wpBeforeToViews', event );
+
 		event.content = wp.mce.views.toViews( event.content );
 	});
 
@@ -278,6 +280,8 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 				return;
 			}
 
+			editor.fire( 'wpBeforeToViews', event );
+
 			node.innerHTML = wp.mce.views.toViews( node.innerHTML );
 		});
 
@@ -356,6 +360,8 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 				}
 				return ''; // If error, remove the view wrapper
 			});
+
+			editor.fire( 'wpAfterRemoveViews', event );
 		}
 	});
 
@@ -539,6 +545,7 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 
 	return {
 		getViewText: getViewText,
-		setViewText: setViewText
+		setViewText: setViewText,
+		select: select
 	};
 });

@@ -45,6 +45,7 @@ if ( is_admin() && ! class_exists( 'Editor_Experiments' ) ) {
 			$to_remove = array_keys( $plugins, 'wpview' );
 			$to_remove = array_merge( $to_remove, array_keys( $plugins, 'wpeditimage' ) );
 			$to_remove = array_merge( $to_remove, array_keys( $plugins, 'wpgallery' ) );
+			$to_remove = array_merge( $to_remove, array_keys( $plugins, 'wordpress' ) );
 
 			foreach( $to_remove as $plugin ) {
 			    unset( $plugins[$plugin] );
@@ -61,6 +62,7 @@ if ( is_admin() && ! class_exists( 'Editor_Experiments' ) ) {
 			$plugins['wpgallery'] = plugins_url( 'tinymce.gallery.js', __FILE__ );
 			$plugins['general'] = plugins_url( 'tinymce.general.js', __FILE__ );
 			$plugins['insert'] = plugins_url( 'tinymce.insert.js', __FILE__ );
+			$plugins['wordpress'] = plugins_url( 'tinymce.wordpress.js', __FILE__ );
 
 			return $plugins;
 
