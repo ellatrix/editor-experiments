@@ -74,7 +74,7 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 
 		deselect();
 		selected = viewNode;
-		dom.addClass( viewNode, 'selected' );
+		dom.setAttrib( viewNode, 'data-mce-selected', 'true' );
 
 		clipboard = dom.create( 'div', {
 			'class': 'wpview-clipboard',
@@ -110,7 +110,7 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 			dom.remove( clipboard );
 
 			dom.unbind( selected, 'beforedeactivate focusin focusout click mouseup', _stop );
-			dom.removeClass( selected, 'selected' );
+			dom.setAttrib( selected, 'data-mce-selected', null );
 		}
 
 		selected = null;

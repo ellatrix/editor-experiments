@@ -19,7 +19,7 @@ p:empty {
 	width: 100%;
 }
 
-.wpview-wrap.selected {
+.wpview-wrap[data-mce-selected] {
 	background: none;
 	border: none;
 	-webkit-box-sizing: border-box;
@@ -28,7 +28,7 @@ p:empty {
 	position: relative;
 }
 
-.wpview-wrap.selected:before {
+.wpview-wrap[data-mce-selected]:before {
 	content: '';
 	margin: 0;
 	padding: 0;
@@ -66,6 +66,11 @@ p:empty {
 	background: none;
 	box-shadow: none;
 	opacity: 1;
+}
+
+.wpview-wrap[data-mce-selected] .wpview-overlay,
+.wpview-wrap[data-mce-selected] .toolbar {
+	display: block;
 }
 
 .gallery {

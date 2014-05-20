@@ -62,7 +62,7 @@ tinymce.PluginManager.add( 'insert', function( editor ) {
 		}
 	} );
 
-	editor.on( 'insertClicked', function( event ) {
+	editor.on( 'insertClicked', function() {
 		// Just for testing.
 		editor.execCommand( 'WP_Medialib' );
 	} );
