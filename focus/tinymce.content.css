@@ -1,10 +1,12 @@
 html {
-	margin: 20px 40px;
+	margin: 0 40px;
 }
 
 body {
+	margin: 20px;
 	margin-left: auto;
 	margin-right: auto;
 	max-width: 100%;
-	overflow-y: visible!important;
+	overflow-y: visible !important;
+	padding: 0 !important;
 }

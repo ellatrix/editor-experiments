@@ -1,12 +1,14 @@
 html {
-	margin: 20px 40px;
+	margin: 0 40px;
 }
 
 body {
+	margin: 20px;
 	margin-left: auto;
 	margin-right: auto;
 	max-width: 100%;
-	overflow-y: visible!important;
+	overflow-y: visible !important;
+	padding: 0 !important;
 }
 
 /* Makes all paragraphs visible. */
@@ -68,7 +70,10 @@ p:empty {
 	opacity: 1;
 }
 
-.wpview-wrap[data-mce-selected] .wpview-overlay,
+.wpview-wrap[data-mce-selected] .wpview-overlay {
+	display: none;
+}
+
 .wpview-wrap[data-mce-selected] .toolbar {
 	display: block;
 }
