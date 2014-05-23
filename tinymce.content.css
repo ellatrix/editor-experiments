@@ -24,6 +24,13 @@ p:empty {
 	width: 100%;
 }
 
+.wpview-wrap .wpview-clipboard {
+	-moz-user-select: text;
+	-webkit-user-select: text;
+	-ms-user-select: text;
+	user-select: text;
+}
+
 .wpview-wrap[data-mce-selected] {
 	background: none;
 	border: none;
