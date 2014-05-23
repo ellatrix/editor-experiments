@@ -186,6 +186,13 @@ tinymce.PluginManager.add( 'wordpress', function( editor ) {
 		stateSelector: 'code'
 	});
 
+	editor.addButton( 'wp_media', {
+		tooltip: 'Add media',
+		onclick: function() {
+			editor.execCommand( 'WP_Medialib' );
+		}
+	} );
+
 	// Menubar
 	// Insert->Add Media
 	if ( typeof wp !== 'undefined' && wp.media && wp.media.editor ) {

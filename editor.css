@@ -1,0 +1,36 @@
+i.mce-i-wp_media {
+	font: normal 20px/1 'dashicons';
+	padding: 0;
+	vertical-align: top;
+	speak: none;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	margin-left: -2px;
+	padding-right: 2px;
+}
+
+i.mce-i-wp_media:before {
+	content: '\f104';
+}
+
+#titlediv {
+	margin-bottom: 2px;
+	z-index: 10;
+}
+
+#titlediv .inside {
+	float: left;
+}
+
+#wp-content-media-buttons {
+	display: none;
+}
+
+#edit-slug-box {
+	padding: 0;
+	padding-left: 1px;
+}
+
+#edit-slug-box > *:not( #sample-permalink ) {
+	display: none !important;
+}

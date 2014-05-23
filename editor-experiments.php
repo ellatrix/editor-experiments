@@ -70,20 +70,23 @@ if ( is_admin() && ! class_exists( 'Editor_Experiments' ) ) {
 
 		function wp_enqueue_editor( $args ) {
 
+			wp_enqueue_style( 'editor', plugins_url( 'editor.css', __FILE__ ) );
+
 			if ( ! empty( $args['tinymce'] ) ) {
 
 			}
-		}
-
-		function mce_buttons( $buttons ) {
-
-			return $buttons;
 
 		}
 
-		function mce_buttons_2( $buttons ) {
+		function mce_buttons() {
 
-			return $buttons;
+			return array( 'wp_media', 'bold', 'italic', 'strikethrough', 'bullist', 'numlist', 'blockquote', 'hr', 'alignleft', 'aligncenter', 'alignright', 'link', 'unlink', 'wp_more', 'fullscreen', 'wp_adv' );
+
+		}
+
+		function mce_buttons_2() {
+
+			return array( 'formatselect', 'pastetext', 'removeformat', 'charmap', 'outdent', 'indent', 'undo', 'redo', 'wp_help' );
 
 		}
 

@@ -8,7 +8,7 @@ tinymce.PluginManager.add( 'insert', function( editor ) {
 	editor.on( 'keyup click ExecCommand AddUndo', function( event ) {
 
 		var dom = editor.dom,
-			selection, offset, fontSize;
+			alignleft, empty, fontSize, offset, range, selection;
 
 		if ( event.type === 'addundo' && ! event.lastlevel ) {
 			return;
@@ -23,14 +23,17 @@ tinymce.PluginManager.add( 'insert', function( editor ) {
 		}
 
 		selection = editor.selection.getStart();
+		range = editor.selection.getRng();
 
 		if ( selection.nodeName !== 'P' ) {
 			selection = dom.getParent( selection, 'P' );
 		}
 
+		empty = dom.isEmpty( selection );
+
 		removeElement();
 
-		if ( selection && dom.isEmpty( selection ) && selection.nodeName === 'P' ) {
+		if ( selection && empty && selection.nodeName === 'P' ) {
 			offset = dom.getPos( selection );
 			fontSize = dom.getStyle( selection, 'font-size', true );
 			insert = editor.dom.create(
@@ -44,6 +47,25 @@ tinymce.PluginManager.add( 'insert', function( editor ) {
 			dom.setStyles( insert, { 'top': offset.y - 2, 'left': offset.x + 10 } );
 			editor.getBody().appendChild( insert );
 			insertLocation = selection;
+		}
+
+		if ( range && selection && ! empty && range.startOffset === 0 && range.endOffset === 0 ) {
+			alignleft = selection.querySelector( '.alignleft' );
+			if ( ! alignleft ) {
+				offset = dom.getPos( selection );
+				fontSize = dom.getStyle( selection, 'font-size', true );
+				insert = editor.dom.create(
+					'DIV',
+					{
+						id: 'wp-insert-block',
+						contenteditable: false
+					},
+					'<span class="dashicons dashicons-plus-alt" style="width: ' + fontSize + ';">'
+				);
+				dom.setStyles( insert, { 'top': offset.y - 2, 'left': offset.x - fontSize.slice( 0, -2 ) - 5 } );
+				editor.getBody().appendChild( insert );
+				insertLocation = selection;
+			}
 		}
 
 	} );
