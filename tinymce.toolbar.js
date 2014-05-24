@@ -6,7 +6,7 @@ tinymce.PluginManager.add( 'toolbar', function( editor ) {
 		dom = tinymce.DOM,
 		toolbar;
 
-	editor.on( 'keyup click nodechange', function() {
+	editor.on( 'nodechange', function() {
 		if ( editor.selection && ! editor.selection.isCollapsed() ) {
 			if ( toolbar._visible ) {
 				toolbar.setPos();
