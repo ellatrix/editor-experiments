@@ -51,7 +51,7 @@ tinymce.PluginManager.add( 'insert', function( editor ) {
 			dom.setStyles( insert, { 'top': offset.y - 2, 'left': offset.x + 10 } );
 			editor.getBody().appendChild( insert );
 			insertLocation = selection;
-		} else if ( range && selection && ! empty && range.startOffset === 0 && range.endOffset === 0 ) {
+		} else if ( range && selection && ! empty && selection.isCollapsed() && range.startOffset === 0 && range.endOffset === 0 ) {
 			alignleft = selection.querySelector( '.alignleft' );
 			if ( ! alignleft ) {
 				offset = dom.getPos( selection );

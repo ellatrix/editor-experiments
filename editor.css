@@ -33,6 +33,10 @@ div.mce-inline-toolbar-grp {
 	top: 0;
 	left: 0;
 	opacity: 0;
+	-moz-user-select: none;
+	-webkit-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
 }
 
 div.mce-inline-toolbar-grp.mce-inline-toolbar-active {
