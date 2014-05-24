@@ -62,6 +62,7 @@ if ( is_admin() && ! class_exists( 'Editor_Experiments' ) ) {
 			$plugins['wpgallery'] = plugins_url( 'tinymce.gallery.js', __FILE__ );
 			$plugins['general'] = plugins_url( 'tinymce.general.js', __FILE__ );
 			$plugins['insert'] = plugins_url( 'tinymce.insert.js', __FILE__ );
+			$plugins['toolbar'] = plugins_url( 'tinymce.toolbar.js', __FILE__ );
 			$plugins['wordpress'] = plugins_url( 'tinymce.wordpress.js', __FILE__ );
 
 			return $plugins;
@@ -80,13 +81,15 @@ if ( is_admin() && ! class_exists( 'Editor_Experiments' ) ) {
 
 		function mce_buttons() {
 
-			return array( 'wp_media', 'bold', 'italic', 'strikethrough', 'bullist', 'numlist', 'blockquote', 'hr', 'alignleft', 'aligncenter', 'alignright', 'link', 'unlink', 'wp_more', 'fullscreen', 'wp_adv' );
+			return array( 'undo', 'redo', 'fullscreen', 'pastetext', 'removeformat', 'wp_help' );
+
+			// TODO: 'bullist', 'numlist', 'hr', 'alignleft', 'aligncenter', 'alignright', 'link', 'unlink', 'wp_more', 'charmap', 'outdent', 'indent'
 
 		}
 
 		function mce_buttons_2() {
 
-			return array( 'formatselect', 'pastetext', 'removeformat', 'charmap', 'outdent', 'indent', 'undo', 'redo', 'wp_help' );
+			return array();
 
 		}
 

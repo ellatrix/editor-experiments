@@ -18,6 +18,7 @@ div.mce-toolbar-grp > div {
 	display: none;
 }
 
-#post-status-info {
-	z-index: 1;
+#post-status-info,
+.mce-toolbar-grp {
+	z-index: 100001;
 }

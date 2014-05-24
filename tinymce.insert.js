@@ -29,9 +29,13 @@ tinymce.PluginManager.add( 'insert', function( editor ) {
 			selection = dom.getParent( selection, 'P' );
 		}
 
-		empty = dom.isEmpty( selection );
-
 		removeElement();
+
+		if ( ! selection ) {
+			return;
+		}
+
+		empty = dom.isEmpty( selection );
 
 		if ( selection && empty && selection.nodeName === 'P' ) {
 			offset = dom.getPos( selection );
