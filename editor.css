@@ -1,5 +1,9 @@
+#titlediv #title {
+	margin-bottom: 10px;
+}
+
 #titlediv {
-	margin-bottom: 2px;
+	margin-bottom: 0;
 	z-index: 10;
 }
 
@@ -14,15 +18,20 @@
 #edit-slug-box {
 	padding: 0;
 	padding-left: 1px;
+	margin: 0;
 }
 
 #edit-slug-box > *:not( #sample-permalink ) {
 	display: none !important;
 }
 
+.wp-switch-editor {
+	margin-top: 0;
+}
+
 div.mce-inline-toolbar-grp {
 	position: absolute;
-	z-index: 100000;
+	z-index: 100010;
 	background: #f5f5f5;
 	padding: 3px;
 	color: black;

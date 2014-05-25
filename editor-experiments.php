@@ -63,6 +63,7 @@ if ( is_admin() && ! class_exists( 'Editor_Experiments' ) ) {
 			$plugins['general'] = plugins_url( 'tinymce.general.js', __FILE__ );
 			$plugins['insert'] = plugins_url( 'tinymce.insert.js', __FILE__ );
 			$plugins['toolbar'] = plugins_url( 'tinymce.toolbar.js', __FILE__ );
+			$plugins['title'] = plugins_url( 'tinymce.title.js', __FILE__ );
 			$plugins['wordpress'] = plugins_url( 'tinymce.wordpress.js', __FILE__ );
 
 			return $plugins;
