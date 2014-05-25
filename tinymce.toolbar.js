@@ -7,7 +7,9 @@ tinymce.PluginManager.add( 'toolbar', function( editor ) {
 		toolbar;
 
 	editor.on( 'nodechange', function() {
-		if ( editor.selection && ! editor.selection.isCollapsed() ) {
+		var selection = editor.selection;
+
+		if ( selection && ! selection.isCollapsed() && selection.getContent().trim() ) {
 			if ( toolbar._visible ) {
 				toolbar.setPos();
 			} else {
