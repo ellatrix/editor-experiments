@@ -3,10 +3,13 @@ html {
 }
 
 body {
-	margin: 20px;
 	margin-left: auto;
 	margin-right: auto;
 	max-width: 100%;
-	overflow-y: visible !important;
-	padding: 0 !important;
+	overflow: visible !important;
+	/* The padding ensure margins of the children are contained in the body. */
+	padding-top: 1px !important;
+	padding-bottom: 1px !important;
+	padding-left: 0 !important;
+	padding-right: 0 !important;
 }
