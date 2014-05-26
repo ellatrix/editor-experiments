@@ -82,9 +82,9 @@ if ( is_admin() && ! class_exists( 'Editor_Experiments' ) ) {
 
 		function mce_buttons() {
 
-			return array( 'undo', 'redo', 'fullscreen', 'pastetext', 'removeformat', 'wp_help' );
+			return array( 'undo', 'redo', 'fullscreen', 'pastetext', 'wp_help', 'switchmode' );
 
-			// TODO: 'bullist', 'numlist', 'hr', 'alignleft', 'aligncenter', 'alignright', 'link', 'unlink', 'wp_more', 'charmap', 'outdent', 'indent'
+			// TODO: 'bullist', 'numlist', 'hr', 'alignleft', 'aligncenter', 'alignright', 'link', 'unlink', 'wp_more', 'charmap', 'outdent', 'indent', 'removeformat'
 
 		}
 

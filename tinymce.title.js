@@ -83,11 +83,13 @@ tinymce.PluginManager.add( 'title', function( editor ) {
 	} );
 
 	editor.on( 'show BeforeRenderUI', function() {
-		tinymce.DOM.hide( 'titlewrap' );
+		tinymce.DOM.hide( 'titlediv' );
+		tinymce.DOM.hide( 'wp-' + editor.id + '-editor-tools' );
 	} );
 
 	editor.on( 'hide', function() {
-		tinymce.DOM.show( 'titlewrap' );
+		tinymce.DOM.show( 'titlediv' );
+		tinymce.DOM.show( 'wp-' + editor.id + '-editor-tools' );
 	} );
 
 } );

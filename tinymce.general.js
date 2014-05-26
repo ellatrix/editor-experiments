@@ -1,8 +1,27 @@
-/* global tinymce */
+/* global tinymce, switchEditors */
 
 tinymce.PluginManager.add( 'general', function( editor ) {
 
 	var colors = [], styleElement;
+
+	editor.addButton( 'switchmode', {
+		classes: 'container btn-group switchmode',
+		type: 'buttongroup',
+		items: [
+			{
+				icon: 'visibility',
+				classes: 'widget btn active',
+				tooltip: 'Visual mode'
+			},
+			{
+				icon: 'editor-code',
+				onclick: function() {
+					switchEditors.go( 'content', 'html' );
+				},
+				tooltip: 'Text mode'
+			}
+		]
+	} );
 
 	// Remove spaces from empty paragraphs.
 	editor.on( 'BeforeSetContent', function( event ) {
