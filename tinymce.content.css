@@ -19,6 +19,27 @@ p:empty {
 	min-height: 20px;
 }
 
+h1#wp-title.empty,
+p.empty {
+	position: relative;
+}
+
+h1#wp-title.empty:after {
+	content: 'Title';
+	opacity: 0.5;
+	position: absolute;
+	top: 0;
+	left: 0;
+}
+
+p.empty:after {
+	content: '...';
+	opacity: 0.5;
+	position: absolute;
+	top: 0;
+	left: 0;
+}
+
 .wpview-wrap {
 	border: none;
 	-webkit-box-sizing: border-box;
