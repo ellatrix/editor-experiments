@@ -57,7 +57,7 @@ tinymce.PluginManager.add( 'insert', function( editor ) {
 				offset = dom.getPos( selection );
 				fontSize = dom.getStyle( selection, 'font-size', true );
 				insert = editor.dom.create(
-					'DIV',
+					'P',
 					{
 						id: 'wp-insert-block',
 						contenteditable: false
