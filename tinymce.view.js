@@ -9,18 +9,10 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 		VK = tinymce.util.VK,
 		toRemove = false;
 
-	function getParentView( node ) {
-		while ( node && node.nodeName !== 'BODY' ) {
-			if ( isView( node ) ) {
-				return node;
-			}
-
-			node = node.parentNode;
-		}
-	}
-
 	function isView( node ) {
-		return node && /\bwpview-wrap\b/.test( node.className );
+		return editor.dom.getParent( node, function( node ) {
+			return editor.dom.hasClass( node, 'wpview-wrap' );
+		} );
 	}
 
 	function createPadNode() {
@@ -31,11 +23,11 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 	/**
 	 * Get the text/shortcode string for a view.
 	 *
-	 * @param view The view wrapper's HTML id or node
+	 * @param view The view wrapper's node
 	 * @returns string The text/shoercode string of the view
 	 */
 	function getViewText( view ) {
-		view = getParentView( typeof view === 'string' ? editor.dom.get( view ) : view );
+		view = isView( view );
 
 		if ( view ) {
 			return window.decodeURIComponent( editor.dom.getAttrib( view, 'data-wpview-text' ) || '' );
@@ -46,11 +38,11 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 	/**
 	 * Set the view's original text/shortcode string
 	 *
-	 * @param view The view wrapper's HTML id or node
+	 * @param view The view wrapper's node
 	 * @param text The text string to be set
 	 */
 	function setViewText( view, text ) {
-		view = getParentView( typeof view === 'string' ? editor.dom.get( view ) : view );
+		view = isView( view );
 
 		if ( view ) {
 			editor.dom.setAttrib( view, 'data-wpview-text', window.encodeURIComponent( text || '' ) );
@@ -95,6 +87,8 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 
 		// select the hidden div
 		editor.selection.select( clipboard, true );
+
+		editor.nodeChanged();
 	}
 
 	/**
@@ -242,7 +236,7 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 		// or inserted is added to a text node (instead of the view).
 		editor.on( 'BeforeSetContent', function() {
 			var walker, target,
-				view = getParentView( selection.getNode() );
+				view = isView( selection.getNode() );
 
 			// If the selection is not within a view, bail.
 			if ( ! view ) {
@@ -286,7 +280,7 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 		});
 
 		editor.dom.bind( editor.getBody().parentNode, 'mousedown mouseup click', function( event ) {
-			var view = getParentView( event.target ),
+			var view = isView( event.target ),
 				deselectEventType;
 
 			// Contain clicks inside the view wrapper
@@ -294,7 +288,6 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 				event.stopPropagation();
 
 				editor.plugins.insert.removeElement();
-				editor.inlineToolbar.hide();
 
 				// Hack to try and keep the block resize handles from appearing. They will show on mousedown and then be removed on mouseup.
 				if ( Env.ie <= 10 ) {
@@ -394,7 +387,7 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 			return;
 		}
 
-		view = getParentView( selection.getNode() );
+		view = isView( selection.getNode() );
 
 		// If the caret is not within the selected view, deselect the view and bail.
 		if ( view !== selected ) {
@@ -545,6 +538,7 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 	});
 
 	return {
+		isView: isView,
 		getViewText: getViewText,
 		setViewText: setViewText,
 		select: select

@@ -6,6 +6,14 @@ tinymce.PluginManager.add( 'toolbar', function( editor ) {
 		dom = tinymce.DOM,
 		toolbar;
 
+	function isView( node ) {
+		var wpview = editor.plugins.wpview;
+		if ( wpview ) {
+			return wpview.isView( node );
+		}
+		return false;
+	}
+
 	editor.on( 'nodechange', function() {
 		var selection = editor.selection,
 			node = selection.getNode();
@@ -14,7 +22,8 @@ tinymce.PluginManager.add( 'toolbar', function( editor ) {
 				selection.getContent().trim() &&
 				node.nodeName !== 'IMG' &&
 				node.nodeName !== 'HR' &&
-				node.id !== 'wp-title' ) {
+				node.id !== 'wp-title' &&
+				! isView( node ) ) {
 			if ( toolbar._visible ) {
 				toolbar.setPos();
 			} else {
