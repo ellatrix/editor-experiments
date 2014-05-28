@@ -87,46 +87,23 @@ tinymce.PluginManager.add( 'insert', function( editor ) {
 	} );
 
 	editor.on( 'wpInsertClicked', function() {
-		var scrollTop,
-			jQuery = window.jQuery,
-			$window = jQuery( window ),
-			$postdivrich = jQuery( '#postdivrich' ),
-			$postdivrichTop = $postdivrich.offset().top,
-			$postdivrichHeight = $postdivrich.height(),
-			$windowScrollTop = $window.scrollTop(),
-			$windowHeight = $window.height();
-
-		// We're blocking scrolling for the page, so make sure the block modal is fully in the viewport.
-		if ( $postdivrichTop > $windowScrollTop ) {
-			scrollTop = $postdivrichTop - 32; // Admin bar.
-		} else if ( $postdivrichTop + $postdivrichHeight < $windowScrollTop + $windowHeight ) {
-			scrollTop = $postdivrichTop + $postdivrichHeight - $windowHeight;
-		}
-
-		if ( scrollTop ) {
-			jQuery( 'html, body' ).animate( {
-				scrollTop: scrollTop
-			}, 500 ).promise().done( showModal );
-		} else {
-			showModal();
-		}
-	} );
-
-	function showModal() {
 		var modal, modalInner,
-			postdivrich = tinymce.DOM.select( '#postdivrich' )[0];
+			postDivRich = tinymce.DOM.select( '#postdivrich' )[0],
+			scrollY = window.pageYOffset,
+			postDivRichTop = postDivRich.getBoundingClientRect().top + scrollY,
+			postDivRichHeight = postDivRich.offsetHeight,
+			windowHeight = window.document.documentElement.clientHeight;
 
-		tinymce.DOM.addClass( document.body, 'wp-block-modal-open' );
+		fadeOutSurroundings();
+
+		tinymce.DOM.setStyles( postDivRich, { opacity: 0.1 } );
 
 		modalInner = tinymce.DOM.create( 'DIV', { id: 'wp-block-modal-inner' } );
 		modal = tinymce.DOM.create( 'DIV', { id: 'wp-block-modal' }, modalInner );
 
+		tinymce.DOM.setStyles( modalInner, { left: tinymce.DOM.getPos( postDivRich ).x, width: postDivRich.offsetWidth } );
+
 		document.body.appendChild( modal );
-
-		tinymce.DOM.setStyles( modalInner, { left: tinymce.DOM.getPos( postdivrich ).x, width: postdivrich.offsetWidth } );
-		tinymce.DOM.setStyles( postdivrich, { opacity: 0.1 } );
-
-		fadeOutSurroundings();
 
 		tinymce.each( editor.blocks, function( options ) {
 			var html;
@@ -141,10 +118,19 @@ tinymce.PluginManager.add( 'insert', function( editor ) {
 		tinymce.DOM.bind( modal, 'click', function() {
 			autoFadeSurroundings();
 			tinymce.DOM.removeClass( document.body, 'wp-block-modal-open' );
-			tinymce.DOM.setStyles( postdivrich, { opacity: 1 } );
+			tinymce.DOM.setStyles( postDivRich, { opacity: 1 } );
 			tinymce.DOM.remove( modal );
 		} );
-	}
+
+		// We're blocking scrolling for the page, so make sure the block modal is fully in the viewport.
+		if ( postDivRichTop - 32 > scrollY ) {
+			window.scrollTo( 0, postDivRichTop - 32 ); // Admin bar.
+		} else if ( postDivRichTop + postDivRichHeight < scrollY + windowHeight ) {
+			window.scrollTo( 0, postDivRichTop + postDivRichHeight - windowHeight );
+		}
+
+		tinymce.DOM.addClass( document.body, 'wp-block-modal-open' );
+	} );
 
 	editor.on( 'PreInit', function() {
 		editor.blocks = {
