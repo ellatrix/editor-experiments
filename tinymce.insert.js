@@ -219,22 +219,20 @@ tinymce.PluginManager.add( 'insert', function( editor ) {
 			table: {
 				title: 'Table',
 				icon: 'screenoptions',
-				onclick: function( editor ) {
-					editor.execCommand( 'mceBlockQuote' );
-				}
+				onclick: function() {}
 			},
 			hr: {
 				title: 'Horizontal Rule',
 				icon: 'editor-insertmore',
 				onclick: function( editor ) {
-					editor.execCommand( 'WP_Page' );
+					editor.execCommand( 'InsertHorizontalRule' );
 				}
 			},
 			more: {
 				title: 'More...',
 				icon: 'editor-insertmore',
 				onclick: function( editor ) {
-					editor.execCommand( 'InsertHorizontalRule' );
+					editor.execCommand( 'WP_More' );
 				}
 			},
 			nextPage: {
