@@ -144,3 +144,53 @@ i.mce-i-visibility:before {
 i.mce-i-editor-code:before {
 	content: '\f475';
 }
+
+#postdivrich {
+	position: relative;
+}
+
+#wp-block-modal {
+	position: fixed;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	z-index: 300000;
+}
+
+#wp-block-modal-inner {
+	position: absolute;
+	top: 32px;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	overflow-y: scroll;
+}
+
+body.wp-block-modal-open {
+	overflow: hidden;
+}
+
+.wp-block-modal-item {
+	float: left;
+	width: 100px;
+	height: 100px;
+	padding: 10px;
+	margin: 10px;
+	border: 1px solid #e5e5e5;
+	-webkit-box-shadow: 0 1px 1px rgba(0,0,0,0.04);
+	box-shadow: 0 1px 1px rgba(0,0,0,0.04);
+	background: #fff;
+	text-align: center;
+	cursor: pointer;
+}
+
+.wp-block-modal-item .dashicons {
+	display: block;
+	margin: 20px auto 10px;
+	height: 40px;
+	width: 40px;
+	line-height: 40px;
+	font-size: 40px;
+	color: #888;
+}

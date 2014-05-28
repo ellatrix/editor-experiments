@@ -18,13 +18,15 @@
 			$textEditor = $( '#content' ),
 			$textEditorClone = $( '<div id="content-clone"></div>' ),
 			$bottom = $( '#post-status-info' ),
+			$postDivRich = $( '#postdivrich' ),
 			$toFade = $( '#adminmenuwrap, #wp-toolbar, .postbox:visible, div.updated:visible, div.error:visible, .wrap h2, #screen-meta-links, #wpfooter' ),
 			fullscreen = window.wp.editor.fullscreen,
 			editorInstance,
 			statusBarHeight = 0,
 			windowHeight = $window.height(),
 			fixedTop = false,
-			fixedBottom = false;
+			fixedBottom = false,
+			fadeOutSurroundings, fadeInSurroundings, autoFadeSurroundings;
 
 		// Disable resizing by WordPress.
 		$bottom.off();
@@ -239,20 +241,36 @@
 
 		textEditorResize();
 
-		// Fade out surrounding elements.
-		$( '#post-body-content' ).hoverIntent( {
-			over: function() {
-				$toFade.fadeTo( 'slow' , 0.1 );
-			},
-			out: function() {
-				var panels = $( '.mce-popover, .mce-menu' );
-				if ( ! panels.length || ( panels.length && ! panels.is( ':visible' ) ) ) {
-					$toFade.fadeTo( 'slow' , 1 );
-				}
-			},
-			timeout: 500
-		} );
+		fadeOutSurroundings = function( event ) {
+			if ( ! event ) {
+				$postDivRich.off( '.hoverIntent' );
+			}
+			$toFade.fadeTo( 'slow' , 0.1 );
+		};
 
+		fadeInSurroundings = function( event ) {
+			var panels = $( '.mce-popover, .mce-menu' );
+			if ( ! event ) {
+				autoFadeSurroundings();
+			}
+			if ( ! panels.length || ( panels.length && ! panels.is( ':visible' ) ) ) {
+				$toFade.fadeTo( 'slow' , 1 );
+			}
+		};
+
+		autoFadeSurroundings = function() {
+			$postDivRich.hoverIntent( {
+				over: fadeOutSurroundings,
+				out: fadeInSurroundings,
+				timeout: 500
+			} );
+		};
+
+		autoFadeSurroundings();
+
+		window.fadeOutSurroundings = fadeOutSurroundings;
+		window.fadeInSurroundings = fadeInSurroundings;
+		window.autoFadeSurroundings = autoFadeSurroundings;
 	} );
 
 } )( jQuery );
