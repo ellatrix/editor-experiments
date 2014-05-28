@@ -7,9 +7,14 @@ tinymce.PluginManager.add( 'toolbar', function( editor ) {
 		toolbar;
 
 	editor.on( 'nodechange', function() {
-		var selection = editor.selection;
+		var selection = editor.selection,
+			node = selection.getNode();
 
-		if ( selection && ! selection.isCollapsed() && selection.getContent().trim() ) {
+		if ( ! selection.isCollapsed() &&
+				selection.getContent().trim() &&
+				node.nodeName !== 'IMG' &&
+				node.nodeName !== 'HR' &&
+				node.id !== 'wp-title' ) {
 			if ( toolbar._visible ) {
 				toolbar.setPos();
 			} else {

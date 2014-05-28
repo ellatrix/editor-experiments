@@ -61,7 +61,13 @@ p.empty:after {
 	position: relative;
 }
 
-.wpview-wrap[data-mce-selected]:before {
+hr[data-mce-selected] {
+	position: relative;
+	outline: none;
+}
+
+.wpview-wrap[data-mce-selected]:before,
+hr[data-mce-selected]:before {
 	content: '';
 	margin: 0;
 	padding: 0;
