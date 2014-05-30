@@ -207,6 +207,11 @@ tinymce.PluginManager.add( 'insert', function( editor ) {
 				icon: 'screenoptions',
 				onclick: function() {}
 			},
+			map: {
+				title: 'Map',
+				icon: 'location-alt',
+				onclick: function() {}
+			},
 			hr: {
 				title: 'Horizontal Rule',
 				icon: 'editor-insertmore',
