@@ -42,18 +42,28 @@ tinymce.PluginManager.add( 'toolbar', function( editor ) {
 
 	function createToolbar() {
 		var inlineToolbar = editor.settings.inlineToolbar || 'bold italic strikethrough link blockquote h2 h3',
-			items = [];
+			buttons = [];
 
-		// TODO: Link button: Select the first lin in the current selection after clicking it.
 		// TODO: Unlink button: Should only show up if the current selection contains a link.
 
-		each( inlineToolbar.split( /[ ,]/ ), function( button ) {
+		each( inlineToolbar.split( /[ ,]/ ), function( name ) {
 			var item;
-			if ( item = editor.buttons[button] ) {
+			if ( item = editor.buttons[name] ) {
 				item.type = item.type || 'button';
 				item.tooltip = false;
-				item = tinymce.ui.Factory.create( item );
-				items.push( item );
+
+				if ( name === 'link' ) {
+					item.onPostRender = function() {
+						editor.on( 'NodeChange', function( event ) {
+							if ( event.element.nodeName === 'A' ) {
+								editor.selection.select( event.element );
+							}
+						} );
+					}
+				}
+
+				button = tinymce.ui.Factory.create( item );
+				buttons.push( button );
 			}
 		} );
 
@@ -68,7 +78,7 @@ tinymce.PluginManager.add( 'toolbar', function( editor ) {
 				layout: 'flow',
 				items: {
 					type: 'buttongroup',
-					items: items
+					items: buttons
 				}
 			}
 		} );
