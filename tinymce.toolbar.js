@@ -41,8 +41,11 @@ tinymce.PluginManager.add( 'toolbar', function( editor ) {
 	editor.on( 'PreInit', createToolbar );
 
 	function createToolbar() {
-		var inlineToolbar = editor.settings.inlineToolbar || 'bold italic strikethrough blockquote h2 h3',
+		var inlineToolbar = editor.settings.inlineToolbar || 'bold italic strikethrough link blockquote h2 h3',
 			items = [];
+
+		// TODO: Link button: Select the first lin in the current selection after clicking it.
+		// TODO: Unlink button: Should only show up if the current selection contains a link.
 
 		each( inlineToolbar.split( /[ ,]/ ), function( button ) {
 			var item;
