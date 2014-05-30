@@ -48,11 +48,11 @@ tinymce.PluginManager.add( 'title', function( editor ) {
 		}
 	} );
 
-	editor.on( 'nodechange blur', function() {
+	editor.on( 'nodechange blur', function( event ) {
 		var dom = editor.dom,
 			title = dummyTitle(),
 			firstP = dom.select( 'p' )[0],
-			node = editor.selection.getNode();
+			node = event.element || editor.selection.getNode();
 
 		if ( dom.isEmpty( title ) && node !== title ) {
 			dom.addClass( title, 'empty' );

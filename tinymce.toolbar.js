@@ -14,16 +14,13 @@ tinymce.PluginManager.add( 'toolbar', function( editor ) {
 		return false;
 	}
 
-	editor.on( 'nodechange', function() {
-		var selection = editor.selection,
-			node = selection.getNode();
-
-		if ( ! selection.isCollapsed() &&
-				selection.getContent().trim() &&
-				node.nodeName !== 'IMG' &&
-				node.nodeName !== 'HR' &&
-				node.id !== 'wp-title' &&
-				! isView( node ) ) {
+	editor.on( 'nodechange', function( event ) {
+		if ( ! editor.selection.isCollapsed() &&
+				editor.selection.getContent().trim() &&
+				event.element.nodeName !== 'IMG' &&
+				event.element.nodeName !== 'HR' &&
+				event.element.id !== 'wp-title' &&
+				! isView( event.element ) ) {
 			if ( toolbar._visible ) {
 				toolbar.setPos();
 			} else {
@@ -41,25 +38,41 @@ tinymce.PluginManager.add( 'toolbar', function( editor ) {
 	editor.on( 'PreInit', createToolbar );
 
 	function createToolbar() {
-		var inlineToolbar = editor.settings.inlineToolbar || 'bold italic strikethrough link blockquote h2 h3',
+		var inlineToolbar = editor.settings.inlineToolbar || 'bold italic strikethrough link unlink blockquote h2 h3',
 			buttons = [];
 
 		// TODO: Unlink button: Should only show up if the current selection contains a link.
 
 		each( inlineToolbar.split( /[ ,]/ ), function( name ) {
-			var item;
-			if ( item = editor.buttons[name] ) {
+			var item = editor.buttons[name],
+				button;
+			if ( item ) {
 				item.type = item.type || 'button';
 				item.tooltip = false;
 
+				// Auto select a link when clicked, and (de)activate the link button appropriately.
 				if ( name === 'link' ) {
 					item.onPostRender = function() {
+						var self = this;
+
 						editor.on( 'NodeChange', function( event ) {
-							if ( event.element.nodeName === 'A' ) {
+							if ( event.element.nodeName === 'A' && editor.selection.isCollapsed() ) {
 								editor.selection.select( event.element );
+								editor.nodeChanged();
 							}
+
+							self.active( event.element.nodeName === 'A' );
 						} );
-					}
+					};
+				// Only show the unlink buton when there is a link in the selection.
+				} else if ( name === 'unlink' ) {
+					item.onPostRender = function() {
+						var self = this;
+
+						editor.on( 'NodeChange', function() {
+							self.disabled( editor.selection.getContent().indexOf( '<a href' ) === -1 );
+						} );
+					};
 				}
 
 				button = tinymce.ui.Factory.create( item );

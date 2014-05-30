@@ -116,6 +116,10 @@ div.mce-inline-toolbar-grp.mce-inline-toolbar-arrow-down:after {
 	margin-left: -8px;
 }
 
+div.mce-inline-toolbar-grp .mce-disabled {
+	display: none;
+}
+
 .mce-edit-area {
 	position: relative;
 }
