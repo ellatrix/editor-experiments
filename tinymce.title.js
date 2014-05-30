@@ -48,7 +48,7 @@ tinymce.PluginManager.add( 'title', function( editor ) {
 		}
 	} );
 
-	editor.on( 'nodechange blur', function( event ) {
+	editor.on( 'NodeChange blur', function() {
 		var dom = editor.dom,
 			title = dummyTitle(),
 			firstP = dom.select( 'p' )[0],
@@ -60,14 +60,14 @@ tinymce.PluginManager.add( 'title', function( editor ) {
 			dom.removeClass( title, 'empty' );
 		}
 
-		if ( dom.isEmpty( firstP ) && node !== firstP ) {
+		if ( firstP && dom.isEmpty( firstP ) && node !== firstP ) {
 			dom.addClass( firstP, 'empty' );
 		} else {
 			dom.removeClass( firstP, 'empty' );
 		}
 	} );
 
-	editor.on( 'keyup', function() {
+	editor.on( 'NodeChange', function() {
 		var title = dummyTitle();
 		if ( title ) {
 			originalTitle.value = title.textContent;

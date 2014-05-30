@@ -4,7 +4,7 @@ tinymce.PluginManager.add( 'toolbar', function( editor ) {
 
 	var each = tinymce.each,
 		dom = tinymce.DOM,
-		toolbar;
+		toolbar, lastNodeChange;
 
 	function isView( node ) {
 		var wpview = editor.plugins.wpview;
@@ -57,11 +57,15 @@ tinymce.PluginManager.add( 'toolbar', function( editor ) {
 
 						editor.on( 'NodeChange', function( event ) {
 							if ( event.element.nodeName === 'A' && editor.selection.isCollapsed() ) {
-								editor.selection.select( event.element );
-								editor.nodeChanged();
+								if ( ! lastNodeChange || lastNodeChange && lastNodeChange.element !== event.element ) {
+									editor.selection.select( event.element );
+									editor.nodeChanged();
+								}
 							}
 
 							self.active( event.element.nodeName === 'A' );
+
+							lastNodeChange = event;
 						} );
 					};
 				// Only show the unlink buton when there is a link in the selection.
