@@ -52,7 +52,7 @@ tinymce.PluginManager.add( 'title', function( editor ) {
 		var dom = editor.dom,
 			title = dummyTitle(),
 			firstP = dom.select( 'p' )[0],
-			node = event.element || editor.selection.getNode();
+			node = editor.selection.getNode();
 
 		if ( dom.isEmpty( title ) && node !== title ) {
 			dom.addClass( title, 'empty' );
