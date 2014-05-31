@@ -89,9 +89,9 @@
 			editor.settings.autoresize_min_height = windowHeight;
 
 			// Get the necessary UI elements.
-			statusBarHeight = $( '.mce-statusbar:visible' ).outerHeight();
-			$visualTop = $( '.mce-toolbar-grp' );
-			$visualEditor = $( '.mce-edit-area' );
+			statusBarHeight = $( '#wp-content-wrap .mce-statusbar:visible' ).outerHeight();
+			$visualTop = $( '#wp-content-wrap .mce-toolbar-grp' );
+			$visualEditor = $( '#wp-content-wrap .mce-edit-area' );
 
 			// Adjust when switching editor modes.
 			editor.on( 'show', function() {
@@ -245,14 +245,17 @@
 			if ( ! event ) {
 				$postDivRich.off( '.hoverIntent' );
 			}
+
 			$toFade.fadeTo( 'slow' , 0.1 );
 		};
 
 		fadeInSurroundings = function( event ) {
 			var panels = $( '.mce-popover, .mce-menu' );
+
 			if ( ! event ) {
 				autoFadeSurroundings();
 			}
+
 			if ( ! panels.length || ( panels.length && ! panels.is( ':visible' ) ) ) {
 				$toFade.fadeTo( 'slow' , 1 );
 			}
@@ -271,6 +274,7 @@
 		window.fadeOutSurroundings = fadeOutSurroundings;
 		window.fadeInSurroundings = fadeInSurroundings;
 		window.autoFadeSurroundings = autoFadeSurroundings;
+
 	} );
 
 } )( jQuery );

@@ -20,5 +20,5 @@ div.mce-toolbar-grp > div {
 
 #post-status-info,
 .mce-toolbar-grp {
-	z-index: 100001;
+	z-index: 1000;
 }
