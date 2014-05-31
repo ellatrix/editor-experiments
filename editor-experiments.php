@@ -23,8 +23,8 @@ if ( is_admin() && ! class_exists( 'Editor_Experiments' ) ) {
 			add_action( 'tiny_mce_plugins', array( $this, 'tiny_mce_plugins' ) );
 			add_action( 'mce_external_plugins', array( $this, 'mce_external_plugins' ) );
 			add_action( 'wp_enqueue_editor', array( $this, 'wp_enqueue_editor' ) );
-			add_action( 'mce_buttons', array( $this, 'mce_buttons' ) );
-			add_action( 'mce_buttons_2', array( $this, 'mce_buttons_2' ) );
+			add_action( 'mce_buttons', array( $this, 'mce_buttons' ), 10, 2 );
+			add_action( 'mce_buttons_2', array( $this, 'mce_buttons_2' ), 10, 2 );
 			add_action( 'tiny_mce_before_init', array( $this, 'tiny_mce_before_init' ) );
 			add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
 
@@ -80,17 +80,17 @@ if ( is_admin() && ! class_exists( 'Editor_Experiments' ) ) {
 
 		}
 
-		function mce_buttons() {
+		function mce_buttons( $buttons, $id ) {
 
-			return array( 'undo', 'redo', 'fullscreen', 'pastetext', 'removeformat', 'wp_help', 'switchmode' );
+			return $id === 'content' ? array( 'undo', 'redo', 'fullscreen', 'pastetext', 'removeformat', 'wp_help', 'switchmode' ) : $buttons;
 
 			// TODO: 'bullist', 'numlist', 'hr', 'alignleft', 'aligncenter', 'alignright', 'link', 'unlink', 'wp_more', 'charmap', 'outdent', 'indent', 'removeformat'
 
 		}
 
-		function mce_buttons_2() {
+		function mce_buttons_2( $buttons, $id ) {
 
-			return array();
+			return $id === 'content' ? array() : $buttons;
 
 		}
 
