@@ -84,9 +84,9 @@ if ( is_admin() && ! class_exists( 'Editor_Experiments' ) ) {
 
 		function mce_buttons( $buttons, $id ) {
 
-			return $id === 'content' ? array( 'undo', 'redo', 'fullscreen', 'pastetext', 'removeformat', 'wp_help', 'switchmode' ) : $buttons;
+			return $id === 'content' ? array( 'undo', 'redo', 'fullscreen', 'pastetext', 'removeformat', 'switchmode' ) : $buttons;
 
-			// TODO: 'bullist', 'numlist', 'hr', 'alignleft', 'aligncenter', 'alignright', 'link', 'unlink', 'wp_more', 'charmap', 'outdent', 'indent', 'removeformat'
+			// TODO: 'bullist', 'numlist', 'alignleft', 'aligncenter', 'alignright', 'charmap', 'outdent', 'indent', 'wp_help'
 
 		}
 
