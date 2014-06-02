@@ -46,6 +46,7 @@ if ( is_admin() && ! class_exists( 'Editor_Experiments' ) ) {
 			$to_remove = array_merge( $to_remove, array_keys( $plugins, 'wpeditimage' ) );
 			$to_remove = array_merge( $to_remove, array_keys( $plugins, 'wpgallery' ) );
 			$to_remove = array_merge( $to_remove, array_keys( $plugins, 'wordpress' ) );
+			$to_remove = array_merge( $to_remove, array_keys( $plugins, 'wpfullscreen' ) );
 
 			foreach( $to_remove as $plugin ) {
 			    unset( $plugins[$plugin] );
@@ -65,6 +66,7 @@ if ( is_admin() && ! class_exists( 'Editor_Experiments' ) ) {
 			$plugins['toolbar'] = plugins_url( 'tinymce.toolbar.js', __FILE__ );
 			$plugins['title'] = plugins_url( 'tinymce.title.js', __FILE__ );
 			$plugins['wordpress'] = plugins_url( 'tinymce.wordpress.js', __FILE__ );
+			$plugins['wpfullscreen'] = plugins_url( 'tinymce.fullscreen.js', __FILE__ );
 
 			return $plugins;
 
@@ -103,7 +105,9 @@ if ( is_admin() && ! class_exists( 'Editor_Experiments' ) ) {
 		function admin_enqueue_scripts() {
 
 			wp_deregister_script( 'mce-view' );
+			wp_deregister_script( 'wp-fullscreen' );
 			wp_register_script( 'mce-view', plugins_url( 'wp.mce.view.js', __FILE__ ), array( 'shortcode', 'media-models', 'media-audiovideo', 'wp-playlist' ), false, true );
+			wp_register_script( 'wp-fullscreen', plugins_url( 'wp.editor.fullscreen.js', __FILE__ ), array( 'jquery' ), false, true );
 
 		}
 

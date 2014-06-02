@@ -41,8 +41,6 @@ tinymce.PluginManager.add( 'toolbar', function( editor ) {
 		var inlineToolbar = editor.settings.inlineToolbar || 'bold italic strikethrough link unlink blockquote h2 h3',
 			buttons = [];
 
-		// TODO: Unlink button: Should only show up if the current selection contains a link.
-
 		each( inlineToolbar.split( /[ ,]/ ), function( name ) {
 			var item = editor.buttons[name],
 				button;
