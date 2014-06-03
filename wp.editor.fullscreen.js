@@ -1,6 +1,6 @@
 ( function( $, window ) {
 
-	fullscreen = {
+	var fullscreen = {
 		bind_resize: function() {},
 		dfwWidth: function() {},
 		fade: {
@@ -32,10 +32,10 @@
 		resizeTextarea: function() {},
 		save: function() {},
 		settings: {
-			id: "",
-			mode: "tinymce",
+			id: '',
+			mode: 'tinymce',
 			timer: 0,
-			title_id: "",
+			title_id: '',
 			toolbar_shown: true,
 			visible: false
 		},
@@ -45,7 +45,7 @@
 			fade: function() {},
 			init: function() {}
 		}
-	}
+	};
 
 	window.wp = window.wp || {};
 	window.wp.editor = window.wp.editor || {};

@@ -16,6 +16,13 @@ if ( ! class_exists( 'Editor_Experiments' ) ) {
 	return;
 }
 
+add_action( 'wp_enqueue_scripts', 'google_map_block_enqueue_scripts' );
+add_action( 'admin_enqueue_scripts', 'google_map_block_enqueue_scripts' );
+
+function google_map_block_enqueue_scripts() {
+	wp_register_script( 'google-maps-api', 'https://maps.googleapis.com/maps/api/js?sensor=false' );
+}
+
 register_shortcode( 'map', array(
 	'__FILE__' => __FILE__,
 	'content' => false,
@@ -23,27 +30,27 @@ register_shortcode( 'map', array(
 	'attributes' => array(
 		'latitude' => array(
 			'title' => __( 'Latitude' ),
-			'default' => '0'
+			'defaults' => '0'
 		),
 		'longitude' => array(
 			'title' => __( 'Longitude' ),
-			'default' => '0'
+			'defaults' => '0'
 		),
 		'zoom' => array(
 			'title' => __( 'Zoom' ),
-			'default' => '1'
+			'defaults' => '1'
 		),
 		'marker' => array(
 			'title' => __( 'Marker' ),
-			'default' => false
+			'defaults' => false
 		),
 		'height' => array(
 			'title' => __( 'Height' ),
-			'default' => '400px'
+			'defaults' => '400px'
 		),
 		'type' => array(
 			'title' => __( 'Type' ),
-			'default' => 'roadmap'
+			'defaults' => 'roadmap'
 		)
 	),
 	'scripts' => array( 'google-maps-api' ),

@@ -23,30 +23,30 @@ window.wp = window.wp || {};
 	 * that the TinyMCE View is not tied to a particular DOM node.
 	 */
 	wp.mce.View = function( options ) {
-		var self = this;
+		var defs;
 		options = options || {};
 		this.type = options.type;
 		this.shortcode = options.shortcode;
 		if ( tinymce.settings._shortcodes[ options.type ] ) {
-			this.defaults = tinymce.settings._shortcodes[ options.type ].attributes;
-			_.each( this.defaults, function( object, attribute ) {
-				self.defaults[ attribute ] = object.default;
+			this.settings = _.clone( tinymce.settings._shortcodes[ options.type ] );
+			defs = _.clone( this.settings.attributes );
+			_.each( defs, function( object, attribute ) {
+				defs[ attribute ] = object.defaults;
 			} );
-			// _.map( this.defaults, function( value, key ) { return value.default; } );
-			this.shortcode.attrs.named = _.defaults( this.shortcode.attrs.named, this.defaults );
+			this.shortcode.attrs.named = _.defaults( this.shortcode.attrs.named, defs );
 		}
 		_.extend( this, _.pick( options, viewOptions ) );
 		this.initialize.apply( this, arguments );
 	};
 
 	_.extend( wp.mce.View.prototype, {
-		initialize: function( options ) {},
-		getHtml: function( attributes, content, tag ) {},
+		initialize: function() {},
+		getHtml: function() {},
 		render: function() {
 			var html = this.getHtml( this.shortcode.attrs.named, this.shortcode.content, this.shortcode.tag ),
 				iframeHTML, loadIframe;
 
-			loadIframe = html && ( html.indexOf( '<script' ) !== -1 );
+			loadIframe = html && ( html.indexOf( '<script' ) !== -1 || ( this.settings && this.settings.scripts ) );
 
 			if ( loadIframe ) {
 				iframeHTML = html;
@@ -61,6 +61,7 @@ window.wp = window.wp || {};
 			_.each( tinymce.editors, function( editor ) {
 				var self = this;
 				if ( editor.plugins.wpview ) {
+					/* jshint scripturl: true */
 					$( editor.getDoc() ).find( '[data-wpview-text="' + this.encodedText + '"]' ).each( function ( i, element ) {
 						var node = $( element ),
 							iframe, doc, iframeContent, contentCSS;
@@ -76,12 +77,19 @@ window.wp = window.wp || {};
 									display: 'block'
 								}
 							} );
-							contentCSS = [ tinymce.settings.iframeViewCSS ]
+							contentCSS = [ tinymce.settings.iframeViewCSS ];
 							iframeContent = '<!DOCTYPE html><html><head>';
 							iframeContent += '<meta charset="utf-8" />';
 							for ( i = 0; i < contentCSS.length; i++ ) {
-								var cssUrl = contentCSS[i];
-								iframeContent += '<link type="text/css" rel="stylesheet" href="' + cssUrl + '" />';
+								iframeContent += '<link type="text/css" rel="stylesheet" href="' + contentCSS[i] + '" />';
+							}
+							if ( self.settings.scripts ) {
+								for ( i = 0; i < self.settings.scripts.length; i++ ) {
+									iframeContent += '<script type="text/javascript" src="' + tinymce.settings._scripts[ self.settings.scripts[i] ].src + '"></script>';
+								}
+							}
+							if ( self.settings.previewjs ) {
+								iframeContent += '<script type="text/javascript" src="' + self.settings.previewjs + '"></script>';
 							}
 							iframeContent += '</head><body onload="">' + iframeHTML + '</body></html>';
 							iframe.contentWindow.attributes = self.shortcode.attrs.named;
@@ -350,7 +358,7 @@ window.wp = window.wp || {};
 				this.dfd = this.attachments.more().done( _.bind( this.render, this ) );
 			},
 
-			getHtml: function( attributes, content, tag ) {
+			getHtml: function( attributes ) {
 				var attachments = false,
 					options;
 
@@ -456,7 +464,7 @@ window.wp = window.wp || {};
 	 * @mixes wp.media.mixin
 	 */
 	wp.mce.media.View = _.extend( wp.media.mixin, {
-		initialize: function( options ) {
+		initialize: function() {
 			this.players = [];
 			_.bindAll( this, 'setPlayer' );
 			$( this ).on( 'ready', this.setPlayer );
@@ -563,7 +571,7 @@ window.wp = window.wp || {};
 			className: 'editor-playlist',
 			template: media.template( 'view-playlist' ),
 
-			initialize: function( options ) {
+			initialize: function() {
 				this.players = [];
 				this.data = {};
 				this.attachments = [];

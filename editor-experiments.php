@@ -104,10 +104,11 @@ if ( ! class_exists( 'Editor_Experiments' ) ) {
 
 		function tiny_mce_before_init( $init ) {
 
-			global $_shortcodes;
+			global $_shortcodes, $wp_scripts;
 
 			$init['iframeViewCSS'] = plugins_url( 'iframe.css', __FILE__ );
 			$init['_shortcodes'] = json_encode( $_shortcodes );
+			$init['_scripts'] = json_encode( $wp_scripts->registered );
 
 			return $init;
 
@@ -206,7 +207,7 @@ if ( ! class_exists( 'Editor_Experiments' ) ) {
 		}
 
 		static function set_default( $attribute ) {
-			return $attribute['default'];
+			return $attribute['defaults'];
 		}
 
 		function wp_enqueue_editor_shortcodes() {
@@ -222,7 +223,7 @@ if ( ! class_exists( 'Editor_Experiments' ) ) {
 
 	new Editor_Experiments;
 
-	function register_shortcode( $tag, $settings, $path = __FILE__ ) {
+	function register_shortcode( $tag, $settings ) {
 
 		// 'callback' => (function) *
 		// 'block' => (bool) *
@@ -232,15 +233,16 @@ if ( ! class_exists( 'Editor_Experiments' ) ) {
 		// 'description' => (string)
 		// 'parameters' => (array)
 
-		// if ( ! $settings['callback'] ||
-		// 		! is_callable( $settings['callback'] ) ) {
-		// 	_doing_it_wrong( __FUNCTION__, 'You need a callable function to register a shortcode.', null );
-		// }
+		// 	_doing_it_wrong( __FUNCTION__, '', null );
 
 		global $_shortcodes;
 
 		if ( ! is_array( $_shortcodes ) ) {
 			$_shortcodes = array();
+		}
+
+		if ( file_exists( plugin_dir_path( $settings['__FILE__'] ) . $tag . '/preview.js' ) ) {
+			$settings['previewjs'] = plugins_url( $tag . '/preview.js', $settings['__FILE__'] );
 		}
 
 		$_shortcodes[$tag] = $settings;
