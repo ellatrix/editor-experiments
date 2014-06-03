@@ -43,10 +43,10 @@ window.wp = window.wp || {};
 		initialize: function() {},
 		getHtml: function() {},
 		render: function() {
-			var html = this.getHtml( this.shortcode.attrs.named, this.shortcode.content, this.shortcode.tag ),
+			var html = this.getHtml( this.shortcode.attrs.named, this.shortcode.content, this.shortcode.tag ) || '',
 				iframeHTML, loadIframe;
 
-			loadIframe = html && ( html.indexOf( '<script' ) !== -1 || ( this.settings && this.settings.scripts ) );
+			loadIframe = ( html && html.indexOf( '<script' ) !== -1 ) || ( this.settings && this.settings.scripts );
 
 			if ( loadIframe ) {
 				iframeHTML = html;
@@ -132,27 +132,27 @@ window.wp = window.wp || {};
 		 *
 		 */
 		register: function( type, constructor ) {
-			var shortcode = constructor.shortcode || type;
+			var defaultConstructor  = {
+					shortcode: type,
+					type: type,
+					toView: function( content ) {
+						var match = wp.shortcode.next( type, content );
 
-			constructor = _.extend( {
-				shortcode: shortcode,
-				type: type,
-				toView: function( content ) {
-					var match = wp.shortcode.next( shortcode, content );
-
-					if ( ! match ) {
-						return;
-					}
-
-					return {
-						index: match.index,
-						content: match.content,
-						options: {
-							shortcode: match.shortcode
+						if ( ! match ) {
+							return;
 						}
-					};
-				}
-			}, constructor );
+
+						return {
+							index: match.index,
+							content: match.content,
+							options: {
+								shortcode: match.shortcode
+							}
+						};
+					}
+				};
+
+			constructor = constructor ? _.extend( defaultConstructor, constructor ) : defaultConstructor;
 
 			constructor.View = wp.mce.View.extend( constructor.View );
 
