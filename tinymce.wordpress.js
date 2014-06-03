@@ -81,23 +81,23 @@ tinymce.PluginManager.add( 'wordpress', function( editor ) {
 		if ( event.content ) {
 			if ( event.content.indexOf( '<!--more' ) !== -1 ) {
 				event.content = event.content.replace( /<!--more(.*?)-->/g, function( match, text ) {
-					return '[wp_more text="' + text.trim() + '"]';
+					return '[more text="' + text.trim() + '"]';
 				} );
 			}
 
 			if ( event.content.indexOf( '<!--nextpage-->' ) !== -1 ) {
-				event.content = event.content.replace( /<!--nextpage-->/g, '[wp_nextpage]' );
+				event.content = event.content.replace( /<!--nextpage-->/g, '[nextpage]' );
 			}
 		}
 	} );
 
 	// Replace more and nexpage shortcodes with html comments.
 	editor.on( 'wpAfterRemoveViews', function( event ) {
-		event.content = event.content.replace( /\[wp_more text="(.*?)"\]/g, function( match, text ) {
+		event.content = event.content.replace( /\[more text="(.*?)"\]/g, function( match, text ) {
 			return '<!--more' + ( text.trim() ? ' ' + text.trim() : '' ) + '-->';
 		} );
-		event.content = event.content.replace( /\[wp_more\]/g, '<!--more-->' );
-		event.content = event.content.replace( /\[wp_nextpage\]/g, '<!--nextpage-->' );
+		event.content = event.content.replace( /\[more\]/g, '<!--more-->' );
+		event.content = event.content.replace( /\[nextpage\]/g, '<!--nextpage-->' );
 	} );
 
 	// Register commands

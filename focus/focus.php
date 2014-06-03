@@ -2,7 +2,7 @@
 
 /*
 Plugin Name: Focus
-Plugin URI: http://wordpress.org/plugins/focus/
+Plugin URI: https://github.com/avryl/focus
 Description: Focus.
 Author: Janneke Van Dorpe
 Author URI: http://profiles.wordpress.org/avryl/

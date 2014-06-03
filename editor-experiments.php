@@ -12,21 +12,27 @@ License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 */
 
-if ( is_admin() && ! class_exists( 'Editor_Experiments' ) ) {
+if ( ! class_exists( 'Editor_Experiments' ) ) {
 
 	class Editor_Experiments {
 
 		function __construct() {
 
-			add_filter( 'mce_css', array( $this, 'mce_css' ) );
+			if ( is_admin() ) {
 
-			add_action( 'tiny_mce_plugins', array( $this, 'tiny_mce_plugins' ) );
-			add_action( 'mce_external_plugins', array( $this, 'mce_external_plugins' ) );
-			add_action( 'wp_enqueue_editor', array( $this, 'wp_enqueue_editor' ) );
-			add_action( 'mce_buttons', array( $this, 'mce_buttons' ), 10, 2 );
-			add_action( 'mce_buttons_2', array( $this, 'mce_buttons_2' ), 10, 2 );
-			add_action( 'tiny_mce_before_init', array( $this, 'tiny_mce_before_init' ) );
-			add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
+				add_filter( 'mce_css', array( $this, 'mce_css' ) );
+
+				add_action( 'tiny_mce_plugins', array( $this, 'tiny_mce_plugins' ) );
+				add_action( 'mce_external_plugins', array( $this, 'mce_external_plugins' ) );
+				add_action( 'wp_enqueue_editor', array( $this, 'wp_enqueue_editor' ) );
+				add_action( 'mce_buttons', array( $this, 'mce_buttons' ), 10, 2 );
+				add_action( 'mce_buttons_2', array( $this, 'mce_buttons_2' ), 10, 2 );
+				add_action( 'tiny_mce_before_init', array( $this, 'tiny_mce_before_init' ) );
+				add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
+				add_action( 'print_media_templates', array( $this, 'print_media_templates' ) );
+				add_action( 'wp_enqueue_editor', array( $this, 'wp_enqueue_editor_shortcodes' ) );
+
+			}
 
 		}
 
@@ -98,6 +104,11 @@ if ( is_admin() && ! class_exists( 'Editor_Experiments' ) ) {
 
 		function tiny_mce_before_init( $init ) {
 
+			global $_shortcodes;
+
+			$init['iframeViewCSS'] = plugins_url( 'iframe.css', __FILE__ );
+			$init['_shortcodes'] = json_encode( $_shortcodes );
+
 			return $init;
 
 		}
@@ -111,10 +122,134 @@ if ( is_admin() && ! class_exists( 'Editor_Experiments' ) ) {
 
 		}
 
+		function print_media_templates() {
+			?>
+
+			<script type="text/html" id="tmpl-view-gallery">
+				<# if ( data.attachments ) { #>
+					<div class="gallery gallery-columns-{{ data.columns }}">
+						<# _.each( data.attachments, function( attachment, index ) { #>
+							<dl class="gallery-item">
+								<dt class="gallery-icon">
+									<# if ( attachment.thumbnail ) { #>
+										<img src="{{ attachment.thumbnail.url }}" width="{{ attachment.thumbnail.width }}" height="{{ attachment.thumbnail.height }}" />
+									<# } else { #>
+										<img src="{{ attachment.url }}" />
+									<# } #>
+								</dt>
+								<# if ( attachment.caption.trim() ) { #>
+									<dd class="wp-caption-text gallery-caption">
+										{{ attachment.caption }}
+									</dd>
+								<# } #>
+							</dl>
+							<# if ( index % data.columns === data.columns - 1 ) { #>
+								<br style="clear: both;">
+							<# } #>
+						<# } ); #>
+					</div>
+				<# } else { #>
+					<div class="wpview-error">
+						<div class="dashicons dashicons-format-gallery"></div><p><?php _e( 'No items found.' ); ?></p>
+					</div>
+				<# } #>
+			</script>
+
+			<script type="text/html" id="tmpl-view-audio">
+				<?php wp_underscore_audio_template() ?>
+				<div class="wpview-overlay"></div>
+			</script>
+
+			<script type="text/html" id="tmpl-view-video">
+				<?php wp_underscore_video_template() ?>
+				<div class="wpview-overlay"></div>
+			</script>
+
+			<script type="text/html" id="tmpl-view-playlist">
+				<# if ( data.tracks ) { #>
+					<div class="wp-playlist wp-{{ data.type }}-playlist wp-playlist-{{ data.style }}">
+						<# if ( 'audio' === data.type ){ #>
+						<div class="wp-playlist-current-item"></div>
+						<# } #>
+						<{{ data.type }} controls="controls" preload="none" <#
+							if ( data.width ) { #> width="{{ data.width }}"<# }
+							#><# if ( data.height ) { #> height="{{ data.height }}"<# } #>></{{ data.type }}>
+						<div class="wp-playlist-next"></div>
+						<div class="wp-playlist-prev"></div>
+					</div>
+					<div class="wpview-overlay"></div>
+				<# } else { #>
+					<div class="wpview-error">
+						<div class="dashicons dashicons-video-alt3"></div><p><?php _e( 'No items found.' ); ?></p>
+					</div>
+				<# } #>
+			</script>
+
+			<?php
+		}
+
+		static function shortcode_callback( $attributes, $content, $tag ) {
+			global $_shortcodes;
+
+			$defaults = array_map( array( 'Editor_Experiments', 'set_default' ) , $_shortcodes[ $tag ]['attributes'] );
+
+			$attributes = shortcode_atts( $defaults, $attributes );
+			$attributes = array_map( array( 'Editor_Experiments', 'set_false' ) , $attributes );
+
+			ob_start();
+			include( trailingslashit( $_shortcodes[ $tag ]['path'] ) . 'template.php' );
+			return ob_get_clean();
+		}
+
+		static function set_false( $attribute ) {
+			return $attribute === 'false' ? false : $attribute;
+		}
+
+		static function set_default( $attribute ) {
+			return $attribute['default'];
+		}
+
+		function wp_enqueue_editor_shortcodes() {
+			global $_shortcodes;
+
+			foreach ( $_shortcodes as $shortcode => $settings ) {
+				if ( file_exists( plugin_dir_path( $settings['__FILE__'] ) . $shortcode . '/register.js' ) ) {
+					wp_enqueue_script( $shortcode . '-view-registration', plugins_url( $shortcode . '/register.js', $settings['__FILE__'] ), array( 'mce-view' ), false, true );
+				}
+			}
+		}
 	}
 
 	new Editor_Experiments;
 
+	function register_shortcode( $tag, $settings, $path = __FILE__ ) {
+
+		// 'callback' => (function) *
+		// 'block' => (bool) *
+		// 'command' => (string) TinyMCE command
+		// 'button' => (string) TinyMCE button, defaults to 'command'
+		// 'plugin' => (string) Added by plugin
+		// 'description' => (string)
+		// 'parameters' => (array)
+
+		// if ( ! $settings['callback'] ||
+		// 		! is_callable( $settings['callback'] ) ) {
+		// 	_doing_it_wrong( __FUNCTION__, 'You need a callable function to register a shortcode.', null );
+		// }
+
+		global $_shortcodes;
+
+		if ( ! is_array( $_shortcodes ) ) {
+			$_shortcodes = array();
+		}
+
+		$_shortcodes[$tag] = $settings;
+
+		add_shortcode( $tag, array( 'Editor_Experiments', 'shortcode_callback' ) );
+
+	}
+
 }
 
 require_once( 'focus/focus.php' );
+require_once( 'google-maps-block/google-maps-block.php' );

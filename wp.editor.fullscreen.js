@@ -12,7 +12,7 @@
 		off: this.on,
 		on: function() {
 			$( 'body' ).toggleClass( 'fullscreen' );
-			this.settings.visible = true;
+			this.settings.visible = ! this.settings.visible ;
 			$( window ).trigger( 'resize' );
 		},
 		pubsub: {
