@@ -1,7 +1,7 @@
 <script src="https://maps.googleapis.com/maps/api/js?sensor=false"></script>
 <style type="text/css">.map img { max-width: none; }</style>
 <script type="text/javascript">
-	'use strict'; // &amp;libraries=places
+	'use strict';
 
 	var attributes = <?php echo json_encode( $attributes ); ?>,
 		thisScript = document.currentScript || document.scripts[ document.scripts.length - 1 ];

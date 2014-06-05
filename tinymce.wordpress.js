@@ -107,7 +107,7 @@ tinymce.PluginManager.add( 'wordpress', function( editor ) {
 			node = editor.selection.getNode();
 
 		tag = tag || 'more';
-		html = '[wp_' + tag + ']';
+		html = '[' + tag + ']';
 
 		// Most common case
 		if ( node.nodeName === 'BODY' || ( node.nodeName === 'P' && node.parentNode.nodeName === 'BODY' ) ) {

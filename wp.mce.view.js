@@ -1,4 +1,4 @@
-/* global tinymce, MediaElementPlayer, WPPlaylistView */
+/* global tinymce, MediaElementPlayer, WPPlaylistView, fadeOutSurroundings, autoFadeSurroundings */
 
 /**
  * Note: this API is "experimental" meaning that it will probably change
@@ -23,7 +23,7 @@ window.wp = window.wp || {};
 	 * that the TinyMCE View is not tied to a particular DOM node.
 	 */
 	wp.mce.View = function( options ) {
-		var defs;
+		var defs, self = this;
 
 		options = options || {};
 		this.type = options.type;
@@ -36,6 +36,9 @@ window.wp = window.wp || {};
 			} );
 			this.shortcode.attrs.named = _.defaults( this.shortcode.attrs.named, defs );
 		}
+		_.each( this.shortcode.attrs.named, function( value, key ) {
+			self.shortcode.attrs.named[ key ] = value === 'false' ? false : value;
+		} );
 		_.extend( this, _.pick( options, viewOptions ) );
 		this.initialize.apply( this, arguments );
 	};
@@ -74,7 +77,7 @@ window.wp = window.wp || {};
 								allowTransparency: 'true',
 								style: {
 									width: '100%',
-									height: '400px',
+									height: '1px',
 									display: 'block'
 								}
 							} );
@@ -92,8 +95,18 @@ window.wp = window.wp || {};
 							if ( self.settings.previewjs ) {
 								iframeContent += '<script type="text/javascript" src="' + self.settings.previewjs + '"></script>';
 							}
-							iframeContent += '</head><body onload="">' + iframeHTML + '</body></html>';
+							iframeContent += '</head><body onload="resize()">' + iframeHTML + '</body></html>';
 							iframe.contentWindow.attributes = self.shortcode.attrs.named;
+							iframe.contentWindow.resize = function() {
+								window.parent.postMessage( {
+									height: $( iframe.contentWindow.document ).height()
+								}, '*' );
+							};
+							window.addEventListener( 'message', function ( event ) {
+								if ( event.data.height ) {
+									$( iframe ).height( event.data.height );
+								}
+							}, false );
 							doc = iframe.contentWindow.document;
 							doc.open();
 							doc.write( iframeContent );
@@ -107,6 +120,106 @@ window.wp = window.wp || {};
 					} );
 				}
 			}, this );
+		},
+		refresh: function( attributes, node ) {
+			var text, defs, validKeys;
+			if ( this.settings.attributes ) {
+				defs = _.clone( this.settings.attributes );
+				validKeys = [];
+				_.each( defs, function( object, attribute ) {
+					defs[ attribute ] = object.defaults;
+					validKeys.push( attribute );
+				} );
+				attributes = _.defaults( attributes, defs );
+				attributes = _.pick( attributes, validKeys );
+			}
+			text = '[' + this.type;
+			_.each( attributes, function( value, key ) {
+				text += ' ' + key + '="' + value + '"';
+			} );
+			text += ']';
+			wp.mce.views.refreshView( this, text, node );
+		},
+		modal: function( node, callback ) {
+			var modal, modalInner,
+				self = this,
+				template,
+				postDivRich = tinymce.DOM.select( '#postdivrich' )[0],
+				scrollY = window.pageYOffset,
+				postDivRichTop = postDivRich.getBoundingClientRect().top + scrollY,
+				postDivRichHeight = postDivRich.offsetHeight,
+				windowHeight = window.document.documentElement.clientHeight,
+				editorBody = tinymce.activeEditor.getBody();
+
+			fadeOutSurroundings();
+
+			tinymce.DOM.setStyles( postDivRich, { opacity: 0.1 } );
+
+			modalInner = tinymce.DOM.create( 'DIV', { id: 'wp-block-modal-inner' } );
+			modal = tinymce.DOM.create( 'DIV', { id: 'wp-block-modal' }, modalInner );
+
+			tinymce.DOM.setStyles( modalInner, {
+				left: tinymce.DOM.getPos( postDivRich ).x + tinymce.activeEditor.dom.getPos( editorBody ).x - 10,
+				width: editorBody.offsetWidth + 20
+			} );
+
+			document.body.appendChild( modal );
+
+			template = $( '#' + this.type + '-shortcode-edit-template' ).clone();
+
+			$( modalInner ).append( template );
+
+			$.each( this.shortcode.attrs.named, function( key, value ) {
+				var input = template.find( 'input[name="' + key + '"]' );
+				if ( input ) {
+					if ( input.is( ':checkbox' ) ) {
+						input.prop( 'checked', value );
+					} else {
+						input.val( value );
+					}
+				}
+			} );
+
+			template.show();
+
+			template.on( 'submit', function( event ) {
+				event.preventDefault();
+
+				$.fn.serializeObject = function() {
+					var object = {},
+						array = this.serializeArray();
+					$.each( array, function() {
+						if ( object[ this.name ] !== undefined ) {
+							if ( ! object[ this.name ].push ) {
+								object[ this.name ] = [ object[ this.name ] ];
+							}
+							object[ this.name ].push( this.value || '' );
+						} else {
+							object[ this.name ] = this.value || '';
+						}
+					} );
+					return object;
+				};
+
+				self.refresh( jQuery( this ).serializeObject(), node );
+
+				autoFadeSurroundings();
+
+				tinymce.DOM.removeClass( document.body, 'wp-block-modal-open' );
+				tinymce.DOM.setStyles( postDivRich, { opacity: 1 } );
+				tinymce.DOM.remove( modal );
+			} );
+
+			// We're blocking scrolling for the page, so make sure the block modal is fully in the viewport.
+			if ( postDivRichTop - 32 > scrollY ) {
+				window.scrollTo( 0, postDivRichTop - 32 ); // Admin bar.
+			} else if ( postDivRichTop + postDivRichHeight < scrollY + windowHeight ) {
+				window.scrollTo( 0, postDivRichTop + postDivRichHeight - windowHeight );
+			}
+
+			tinymce.DOM.addClass( document.body, 'wp-block-modal-open' );
+
+			callback( template );
 		},
 		unbind: function() {}
 	} );
@@ -132,8 +245,7 @@ window.wp = window.wp || {};
 		 * @param constructor
 		 */
 		register: function( type, constructor ) {
-			var defaultConstructor  = {
-					shortcode: type,
+			var defaultConstructor = {
 					type: type,
 					toView: function( content ) {
 						var match = wp.shortcode.next( type, content );
@@ -156,7 +268,7 @@ window.wp = window.wp || {};
 				constructor.View = constructor;
 			}
 
-			constructor = constructor ? _.extend( defaultConstructor, constructor ) : defaultConstructor;
+			constructor = constructor ? _.defaults( constructor, defaultConstructor ) : defaultConstructor;
 
 			constructor.View = wp.mce.View.extend( constructor.View );
 
@@ -301,13 +413,14 @@ window.wp = window.wp || {};
 				result = views[ instance.type ].toView( text );
 				viewOptions = result.options;
 				viewOptions.encodedText = encodedText;
+				viewOptions.type = instance.type;
 
 				// Create a new instance.
 				newInstance = new views[ instance.type ].View( viewOptions );
 				instances[ encodedText ] = newInstance;
 			}
 
-			wp.mce.views.render();
+			this.render();
 		},
 
 		getInstance: function( encodedText ) {
@@ -344,8 +457,7 @@ window.wp = window.wp || {};
 		template: media.template( 'view-gallery' ),
 		postID: $( '#post_ID' ).val(),
 
-		initialize: function( options ) {
-			this.shortcode = options.shortcode;
+		initialize: function() {
 			this.fetch();
 		},
 
@@ -454,9 +566,9 @@ window.wp = window.wp || {};
 			media = wp.media.view.MediaDetails.prepareSrc( media.get(0) );
 
 			setTimeout( function() {
-				wp.mce.av.loaded = true;
+				self.loaded = true;
 				self.players.push( new MediaElementPlayer( media, self.mejsSettings ) );
-			}, self.loaded ? 10 : 500 );
+			}, this.loaded ? 10 : 500 );
 		},
 
 		/**
@@ -484,8 +596,6 @@ window.wp = window.wp || {};
 			wp.media.mixin.pauseAllPlayers();
 
 			frame = media.edit( text );
-
-			console.log( text, frame );
 
 			frame.on( 'close', function() {
 				frame.detach();
@@ -653,18 +763,14 @@ window.wp = window.wp || {};
 	} ) );
 
 	wp.mce.views.register( 'more', {
-		View: {
-			getHtml: function() {
-				return '<p><span>MORE</span></p>';
-			}
+		getHtml: function() {
+			return '<p><span>MORE</span></p>';
 		}
 	} );
 
 	wp.mce.views.register( 'nextpage', {
-		View: {
-			getHtml: function() {
-				return '<p><span>NEXT PAGE</span></p>';
-			}
+		getHtml: function() {
+			return '<p><span>NEXT PAGE</span></p>';
 		}
 	} );
 

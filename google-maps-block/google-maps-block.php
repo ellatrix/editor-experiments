@@ -17,10 +17,15 @@ if ( ! class_exists( 'Editor_Experiments' ) ) {
 }
 
 add_action( 'wp_enqueue_scripts', 'google_map_block_enqueue_scripts' );
-add_action( 'admin_enqueue_scripts', 'google_map_block_enqueue_scripts' );
 
 function google_map_block_enqueue_scripts() {
-	wp_register_script( 'google-maps-api', 'https://maps.googleapis.com/maps/api/js?sensor=false' );
+	wp_enqueue_script( 'google-maps-api', 'https://maps.googleapis.com/maps/api/js?sensor=false' );
+}
+
+add_action( 'admin_enqueue_scripts', 'google_map_block_admin_enqueue_scripts' );
+
+function google_map_block_admin_enqueue_scripts() {
+	wp_enqueue_script( 'google-maps-api', 'https://maps.googleapis.com/maps/api/js?sensor=false&amp;libraries=places' );
 }
 
 register_shortcode( 'map', array(

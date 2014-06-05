@@ -252,3 +252,35 @@ body.fullscreen #post-status-info {
 	border-top-style: solid;
 	border-top-color: rgb( 222, 222, 222 );
 }
+
+.shortcode-edit-template {
+	position: relative;
+	margin: 10px;
+	margin-top: 50px;
+}
+
+.shortcode-edit-template:after {
+	content: '';
+	margin: 0;
+	padding: 0;
+	position: absolute;
+	top: -5px;
+	left: -5px;
+	right: -5px;
+	bottom: -5px;
+	outline: 2px dashed #aaa;
+	z-index: -1;
+	background: #f1f1f1;
+}
+
+.shortcode-edit-template-tag {
+	position: absolute;
+	top: -27px;
+	font-weight: bold;
+	color: #aaa;
+	font-size: 14px;
+}
+
+.pac-container {
+	z-index: 300010;
+}
