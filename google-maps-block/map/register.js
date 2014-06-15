@@ -4,6 +4,7 @@
 	'use strict';
 
 	views.register( 'map', {
+		overlay: true,
 		edit: function( text, node ) {
 			var self = this;
 
@@ -56,6 +57,7 @@
 					}
 
 					map.panTo( place.geometry.location );
+					map.setZoom( 12 );
 				} );
 
 				addListener( map, 'center_changed', _.debounce( function() {

@@ -32,6 +32,7 @@ if ( ! class_exists( 'Editor_Experiments' ) ) {
 				add_action( 'print_media_templates', array( $this, 'print_media_templates' ) );
 				add_action( 'wp_enqueue_editor', array( $this, 'wp_enqueue_editor_shortcodes' ) );
 				add_action( 'admin_footer', array( $this, 'admin_footer_shortcodes' ) );
+				add_action( 'wp_ajax_parse-embed', array( $this, 'wp_ajax_parse_embed' ), 1 );
 
 			}
 
@@ -232,6 +233,25 @@ if ( ! class_exists( 'Editor_Experiments' ) ) {
 				</form>
 				<?php
 			}
+		}
+
+		function wp_ajax_parse_embed() {
+			global $post, $wp_embed;
+
+			if ( ! $post = get_post( (int) $_REQUEST['post_ID'] ) ) {
+				wp_send_json_error();
+			}
+
+			if ( ! current_user_can( 'read_post', $post->ID ) ) {
+				wp_send_json_error();
+			}
+
+			setup_postdata( $post );
+
+			$parsed = $wp_embed->run_shortcode( $_POST['content'] );
+			$parsed = do_shortcode( $parsed );
+
+			wp_send_json_success( $parsed );
 		}
 	}
 
