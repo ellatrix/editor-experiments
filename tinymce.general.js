@@ -34,7 +34,7 @@ tinymce.PluginManager.add( 'general', function( editor ) {
 
 	editor.on( 'init', function() {
 
-		setTimeout( setUIColors, 200 );
+		setTimeout( setUIColors, 250 );
 
 	} );
 

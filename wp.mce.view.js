@@ -27,18 +27,20 @@ window.wp = window.wp || {};
 
 		options = options || {};
 		this.type = options.type;
-		this.shortcode = options.shortcode;
-		if ( tinymce.settings._shortcodes[ options.type ] ) {
-			this.settings = _.clone( tinymce.settings._shortcodes[ options.type ] );
-			defs = _.clone( this.settings.attributes );
-			_.each( defs, function( object, attribute ) {
-				defs[ attribute ] = object.defaults;
+		if ( this.shortcode ) {
+			this.shortcode = options.shortcode;
+			if ( tinymce.settings._shortcodes[ options.type ] ) {
+				this.settings = _.clone( tinymce.settings._shortcodes[ options.type ] );
+				defs = _.clone( this.settings.attributes );
+				_.each( defs, function( object, attribute ) {
+					defs[ attribute ] = object.defaults;
+				} );
+				this.shortcode.attrs.named = _.defaults( this.shortcode.attrs.named, defs );
+			}
+			_.each( this.shortcode.attrs.named, function( value, key ) {
+				self.shortcode.attrs.named[ key ] = value === 'false' ? false : value;
 			} );
-			this.shortcode.attrs.named = _.defaults( this.shortcode.attrs.named, defs );
 		}
-		_.each( this.shortcode.attrs.named, function( value, key ) {
-			self.shortcode.attrs.named[ key ] = value === 'false' ? false : value;
-		} );
 		_.extend( this, _.pick( options, viewOptions ) );
 		this.initialize.apply( this, arguments );
 	};
@@ -47,7 +49,7 @@ window.wp = window.wp || {};
 		initialize: function() {},
 		getHtml: function() {},
 		render: function() {
-			var html = this.getHtml( this.shortcode.attrs.named, this.shortcode.content, this.shortcode.tag ) || '',
+			var html = ( this.shortcode ? this.getHtml( this.shortcode.attrs.named, this.shortcode.content, this.shortcode.tag ) : this.getHtml() ) || '',
 				iframeHTML, loadIframe;
 
 			loadIframe = ( html && html.indexOf( '<script' ) !== -1 ) || ( this.settings && this.settings.scripts );
@@ -763,14 +765,41 @@ window.wp = window.wp || {};
 	} ) );
 
 	wp.mce.views.register( 'more', {
-		getHtml: function() {
-			return '<p><span>MORE</span></p>';
-		}
-	} );
+		toView: function( content ) {
+			var re = /<!--(more|nextpage)(.*?)-->/g,
+				match = re.exec( content );
 
-	wp.mce.views.register( 'nextpage', {
-		getHtml: function() {
-			return '<p><span>NEXT PAGE</span></p>';
+			if ( ! match ) {
+				return;
+			}
+
+			return {
+				index: match.index,
+				content: match[0],
+				options: {
+					_type: match[1],
+					text: tinymce.trim( match[2] )
+				}
+			};
+		},
+		View: {
+			initialize: function( options ) {
+				this.text = options.text;
+				this._type = options._type;
+			},
+			getHtml: function() {
+				var text;
+
+				if ( this._type === 'nextpage' ) {
+					text = 'Page Break';
+				} else if ( this.text ) {
+					text = this.text;
+				} else {
+					text = '(more&hellip;)';
+				}
+
+				return '<p><span>' + text + '</span></p>';
+			}
 		}
 	} );
 

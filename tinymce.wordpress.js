@@ -76,30 +76,6 @@ tinymce.PluginManager.add( 'wordpress', function( editor ) {
 		window.wpActiveEditor = editor.id;
 	});
 
-	// Replace more and nexpage html comments with shortcodes.
-	editor.on( 'wpBeforeToViews', function( event ) {
-		if ( event.content ) {
-			if ( event.content.indexOf( '<!--more' ) !== -1 ) {
-				event.content = event.content.replace( /<!--more(.*?)-->/g, function( match, text ) {
-					return '[more text="' + text.trim() + '"]';
-				} );
-			}
-
-			if ( event.content.indexOf( '<!--nextpage-->' ) !== -1 ) {
-				event.content = event.content.replace( /<!--nextpage-->/g, '[nextpage]' );
-			}
-		}
-	} );
-
-	// Replace more and nexpage shortcodes with html comments.
-	editor.on( 'wpAfterRemoveViews', function( event ) {
-		event.content = event.content.replace( /\[more text="(.*?)"\]/g, function( match, text ) {
-			return '<!--more' + ( text.trim() ? ' ' + text.trim() : '' ) + '-->';
-		} );
-		event.content = event.content.replace( /\[more\]/g, '<!--more-->' );
-		event.content = event.content.replace( /\[nextpage\]/g, '<!--nextpage-->' );
-	} );
-
 	// Register commands
 	editor.addCommand( 'WP_More', function( tag ) {
 		var parent, html,
@@ -107,7 +83,7 @@ tinymce.PluginManager.add( 'wordpress', function( editor ) {
 			node = editor.selection.getNode();
 
 		tag = tag || 'more';
-		html = '[' + tag + ']';
+		html = '<!--' + tag + '-->';
 
 		// Most common case
 		if ( node.nodeName === 'BODY' || ( node.nodeName === 'P' && node.parentNode.nodeName === 'BODY' ) ) {
