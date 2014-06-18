@@ -180,7 +180,7 @@
 			// Maybe adjust the top bar.
 			if ( ( ! fixedTop || eventType === 'resize' ) &&
 					( windowPos >= ( topPos - adminBarHeight ) &&
-					windowPos <= ( topPos - adminBarHeight + editorHeight ) ) ) {
+					windowPos <= ( topPos - adminBarHeight + editorHeight - 100 ) ) ) {
 				fixedTop = true;
 				$top.css( {
 					position: 'fixed',
@@ -199,7 +199,7 @@
 			} else if ( fixedTop &&
 					// The topHeight is added to the editorHeight (padding), so we'll have to subtract it again.
 					( windowPos <= ( topPos - adminBarHeight ) ||
-					windowPos >= ( topPos - adminBarHeight + editorHeight - ( visual ? topHeight : 0 ) ) ) ) {
+					windowPos >= ( topPos - adminBarHeight + editorHeight - ( visual ? topHeight : 0 ) - 100 ) ) ) {
 				fixedTop = false;
 				$top.css( {
 					position: 'relative',
