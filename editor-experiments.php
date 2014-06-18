@@ -16,6 +16,8 @@ if ( ! class_exists( 'Editor_Experiments' ) ) {
 
 	class Editor_Experiments {
 
+		const WP_VERSION = '4.0-alpha-28611-src';
+
 		function __construct() {
 
 			if ( is_admin() ) {
@@ -35,6 +37,12 @@ if ( ! class_exists( 'Editor_Experiments' ) ) {
 				add_action( 'wp_ajax_parse-embed', array( $this, 'wp_ajax_parse_embed' ), 1 );
 
 			}
+
+		}
+
+		static function admin_notices() {
+
+			echo '<div class="error"><p>Please update WordPress to <strong>' . self::WP_VERSION . '</strong> to activate the editor experiments.</p></div>';
 
 		}
 
@@ -255,6 +263,16 @@ if ( ! class_exists( 'Editor_Experiments' ) ) {
 		}
 	}
 
+	global $wp_version;
+
+	if ( empty( $wp_version ) || version_compare( $wp_version, Editor_Experiments::WP_VERSION, '<' ) ) {
+
+		add_action( 'admin_notices', array( 'Editor_Experiments', 'admin_notices' ) );
+
+		return;
+
+	}
+
 	new Editor_Experiments;
 
 	function register_shortcode( $tag, $settings ) {
@@ -285,7 +303,7 @@ if ( ! class_exists( 'Editor_Experiments' ) ) {
 
 	}
 
-}
+	require_once( 'focus/focus.php' );
+	require_once( 'google-maps-block/google-maps-block.php' );
 
-require_once( 'focus/focus.php' );
-require_once( 'google-maps-block/google-maps-block.php' );
+}
