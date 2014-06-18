@@ -22,3 +22,14 @@ div.mce-toolbar-grp > div {
 .mce-toolbar-grp {
 	z-index: 1000;
 }
+
+/* Prevent showing the menu when the opacity changes. */
+.auto-fold #adminmenuback,
+.auto-fold #adminmenuwrap {
+	display: none !important;
+}
+
+.auto-fold .wp-responsive-open #adminmenuback,
+.auto-fold .wp-responsive-open #adminmenuwrap {
+	display: block !important;
+}
