@@ -134,6 +134,22 @@
 
 		} );
 
+		$( '#collapse-menu' ).on( 'click.collapse-menu', function() {
+
+			setTimeout( function() {
+				adjust( 'resize' );
+			}, 10 );
+
+		} );
+
+		$( '.columns-prefs input[type="radio"]' ).on( 'click.postboxes', function() {
+
+			setTimeout( function() {
+				adjust( 'resize' );
+			}, 10 );
+
+		} );
+
 		// Adjust the toolbars based on the active editor mode.
 		function adjust( eventType ) {
 
