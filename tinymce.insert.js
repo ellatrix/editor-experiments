@@ -94,7 +94,7 @@ tinymce.PluginManager.add( 'insert', function( editor ) {
 			postDivRichHeight = postDivRich.offsetHeight,
 			windowHeight = window.document.documentElement.clientHeight;
 
-		wp.editor.fadeOutSurroundings();
+		wp.editor.fade.Out();
 
 		tinymce.DOM.setStyles( postDivRich, { opacity: 0.1 } );
 
@@ -116,7 +116,7 @@ tinymce.PluginManager.add( 'insert', function( editor ) {
 		} );
 
 		tinymce.DOM.bind( modal, 'click', function() {
-			wp.editor.autoFadeSurroundings();
+			wp.editor.fade.auto();
 			tinymce.DOM.removeClass( document.body, 'wp-block-modal-open' );
 			tinymce.DOM.setStyles( postDivRich, { opacity: 1 } );
 			tinymce.DOM.remove( modal );

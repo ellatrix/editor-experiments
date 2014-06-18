@@ -101,7 +101,7 @@ window.wp = window.wp || {};
 				windowHeight = window.document.documentElement.clientHeight,
 				editorBody = tinymce.activeEditor.getBody();
 
-			wp.editor.fadeOutSurroundings();
+			wp.editor.fade.Out();
 
 			tinymce.DOM.setStyles( postDivRich, { opacity: 0.1 } );
 
@@ -153,7 +153,7 @@ window.wp = window.wp || {};
 
 				self.refresh( jQuery( this ).serializeObject(), node );
 
-				wp.editor.autoFadeSurroundings();
+				wp.editor.fade.auto();
 
 				tinymce.DOM.removeClass( document.body, 'wp-block-modal-open' );
 				tinymce.DOM.setStyles( postDivRich, { opacity: 1 } );
