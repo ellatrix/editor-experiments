@@ -51,6 +51,8 @@
 	window.wp.editor = window.wp.editor || {};
 	window.wp.editor.fullscreen = fullscreen;
 
-	window.wp.editor.enableFadeSurroundings = true;
+	$( wp ).on( 'ready.editor.fade', function() {
+		wp.editor.fade.auto();
+	} );
 
 } )( jQuery, window );
