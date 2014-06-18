@@ -162,7 +162,7 @@
 				adminBarHeight = $adminBar.height(),
 				bottomHeight = $bottom.outerHeight(),
 				$top, $editor, visual,
-				topPos, topHeight, editorPos, editorHeight, editorWidth;
+				topPos, topHeight, editorPos, editorHeight, editorWidth, windowWidth;
 
 			// Visual editor.
 			if ( editorInstance && ! editorInstance.isHidden() ) {
@@ -192,6 +192,7 @@
 			editorHeight = $editor.outerHeight();
 			editorWidth = $editor.outerWidth();
 			windowHeight = $window.height();
+			windowWidth = $window.width();
 
 			// Maybe adjust the top bar.
 			if ( ( ! fixedTop || eventType === 'resize' ) &&
@@ -200,7 +201,7 @@
 				fixedTop = true;
 				$top.css( {
 					position: 'fixed',
-					top: adminBarHeight,
+					top: ( windowWidth > 600 ? adminBarHeight : 0 ),
 					width: editorWidth - ( visual ? 0 : 38 )
 				} );
 				if ( visual ) {
