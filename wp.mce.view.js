@@ -1,4 +1,4 @@
-/* global tinymce, MediaElementPlayer, WPPlaylistView, fadeOutSurroundings, autoFadeSurroundings */
+/* global tinymce, MediaElementPlayer, WPPlaylistView */
 
 /**
  * Note: this API is "experimental" meaning that it will probably change
@@ -101,7 +101,7 @@ window.wp = window.wp || {};
 				windowHeight = window.document.documentElement.clientHeight,
 				editorBody = tinymce.activeEditor.getBody();
 
-			fadeOutSurroundings();
+			wp.editor.fadeOutSurroundings();
 
 			tinymce.DOM.setStyles( postDivRich, { opacity: 0.1 } );
 
@@ -153,7 +153,7 @@ window.wp = window.wp || {};
 
 				self.refresh( jQuery( this ).serializeObject(), node );
 
-				autoFadeSurroundings();
+				wp.editor.autoFadeSurroundings();
 
 				tinymce.DOM.removeClass( document.body, 'wp-block-modal-open' );
 				tinymce.DOM.setStyles( postDivRich, { opacity: 1 } );

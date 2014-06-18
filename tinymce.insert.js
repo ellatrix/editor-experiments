@@ -1,4 +1,4 @@
-/* global tinymce, fadeOutSurroundings, autoFadeSurroundings */
+/* global tinymce */
 
 tinymce.PluginManager.add( 'insert', function( editor ) {
 
@@ -94,7 +94,7 @@ tinymce.PluginManager.add( 'insert', function( editor ) {
 			postDivRichHeight = postDivRich.offsetHeight,
 			windowHeight = window.document.documentElement.clientHeight;
 
-		fadeOutSurroundings();
+		wp.editor.fadeOutSurroundings();
 
 		tinymce.DOM.setStyles( postDivRich, { opacity: 0.1 } );
 
@@ -116,7 +116,7 @@ tinymce.PluginManager.add( 'insert', function( editor ) {
 		} );
 
 		tinymce.DOM.bind( modal, 'click', function() {
-			autoFadeSurroundings();
+			wp.editor.autoFadeSurroundings();
 			tinymce.DOM.removeClass( document.body, 'wp-block-modal-open' );
 			tinymce.DOM.setStyles( postDivRich, { opacity: 1 } );
 			tinymce.DOM.remove( modal );
