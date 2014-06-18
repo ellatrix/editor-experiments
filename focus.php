@@ -48,7 +48,7 @@ if ( is_admin() && ! class_exists( 'Focus' ) ) {
 			if ( ! empty( $args['tinymce'] ) ) {
 
 				wp_enqueue_style( 'wp-editor-focus', plugins_url( 'wp.editor.focus.css', __FILE__ ) );
-				wp_enqueue_script( 'wp-editor-focus', plugins_url( 'wp.editor.focus.js', __FILE__ ), array( 'jquery', 'hoverIntent' ), false, true );
+				wp_enqueue_script( 'wp-editor-focus', plugins_url( 'wp.editor.focus.js', __FILE__ ), array( 'jquery', 'hoverIntent' ), '0.3', true );
 
 			}
 		}

@@ -7,6 +7,9 @@
 
 	'use strict';
 
+	window.wp = wp || {};
+	wp.editor = wp.editor || {};
+
 	$( function() {
 
 		var $window = $( window ),
@@ -18,6 +21,7 @@
 			$textEditor = $( '#content' ),
 			$textEditorClone = $( '<div id="content-clone"></div>' ),
 			$bottom = $( '#post-status-info' ),
+			$postDivRich = $( '#postdivrich' ),
 			$toFade = $( '#adminmenuwrap, #wp-toolbar, .postbox:visible, div.updated:visible, div.error:visible, .wrap h2, #screen-meta-links, #wpfooter' ),
 			fullscreen = window.wp.editor.fullscreen,
 			editorInstance,
@@ -40,7 +44,7 @@
 			'display': 'none'
 		} );
 
-		// Recalulate the text editor height.
+		// Recalculate the text editor height.
 		$textEditor.on( 'focus input propertychange', function() {
 
 			textEditorResize();
@@ -59,8 +63,8 @@
 
 			if ( hiddenHeight === textEditorHeight ) {
 				return;
-			} else if ( hiddenHeight < windowHeight ) {
-				hiddenHeight = windowHeight;
+			} else if ( hiddenHeight < 300 ) {
+				hiddenHeight = 300;
 			}
 
 			$textEditor.height( hiddenHeight );
@@ -84,12 +88,12 @@
 			editor.theme.resizeTo = function() {};
 
 			// Set the minimum height to the initial viewport height.
-			editor.settings.autoresize_min_height = windowHeight;
+			editor.settings.autoresize_min_height = 300;
 
 			// Get the necessary UI elements.
-			statusBarHeight = $( '.mce-statusbar:visible' ).outerHeight();
-			$visualTop = $( '.mce-toolbar-grp' );
-			$visualEditor = $( '.mce-edit-area' );
+			statusBarHeight = $( '#wp-content-wrap .mce-statusbar:visible' ).outerHeight();
+			$visualTop = $( '#wp-content-wrap .mce-toolbar-grp' );
+			$visualEditor = $( '#wp-content-wrap .mce-edit-area' );
 
 			// Adjust when switching editor modes.
 			editor.on( 'show', function() {
@@ -239,19 +243,43 @@
 
 		textEditorResize();
 
-		// Fade out surrounding elements.
-		$( '#post-body-content' ).hoverIntent( {
-			over: function() {
-				$toFade.fadeTo( 'slow' , 0.1 );
-			},
-			out: function() {
-				var panels = $( '.mce-popover, .mce-menu' );
-				if ( ! panels.length || ( panels.length && ! panels.is( ':visible' ) ) ) {
-					$toFade.fadeTo( 'slow' , 1 );
-				}
-			},
-			timeout: 500
-		} );
+		wp.editor.fadeOutSurroundings = function( event ) {
+			if ( ! wp.editor.enableFadeSurroundings ) {
+				return;
+			}
+
+			if ( ! event ) {
+				$postDivRich.off( '.hoverIntent' );
+			}
+
+			$toFade.fadeTo( 'slow' , 0.1 );
+		};
+
+		wp.editor.fadeInSurroundings = function( event ) {
+			if ( ! wp.editor.enableFadeSurroundings ) {
+				return;
+			}
+
+			var panels = $( '.mce-popover, .mce-menu' );
+
+			if ( ! event ) {
+				this.autoFadeSurroundings();
+			}
+
+			if ( ! panels.length || ( panels.length && ! panels.is( ':visible' ) ) ) {
+				$toFade.fadeTo( 'slow' , 1 );
+			}
+		};
+
+		wp.editor.autoFadeSurroundings = function() {
+			$postDivRich.hoverIntent( {
+				over: this.fadeOutSurroundings,
+				out: this.fadeInSurroundings,
+				timeout: 500
+			} );
+		};
+
+		wp.editor.autoFadeSurroundings();
 
 	} );
 
