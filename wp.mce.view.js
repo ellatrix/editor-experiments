@@ -60,7 +60,7 @@ window.wp = window.wp || {};
 						( _.isFunction( views[ this.type ].edit ) ? '<div class="dashicons dashicons-edit edit"></div>' : '' ) +
 						'<div class="dashicons dashicons-no-alt remove"></div>' +
 					'</div>' +
-					'<div class="wpview-content">' +
+					'<div class="wpview-content wpview-type-' + this.type + '">' +
 						( loadIframe ? '' : html ) +
 					'</div>' +
 					( this.overlay ? '<div class="wpview-overlay"></div>' : '' ) +
@@ -432,7 +432,7 @@ window.wp = window.wp || {};
 			return wp.html.string( {
 				tag: 'div',
 				attrs: {
-					'class': 'wpview-wrap wpview-type-' + viewType,
+					'class': 'wpview-wrap',
 					'data-wpview-text': encodedText,
 					'data-wpview-type': viewType
 				},

@@ -91,11 +91,12 @@ hr[data-mce-selected]:before {
 	margin: 0;
 	padding: 0;
 	position: absolute;
-	top: -5px;
-	left: -5px;
-	right: -5px;
-	bottom: -5px;
-	outline: 2px dashed #aaa;
+	top: -7px;
+	left: -7px;
+	right: -7px;
+	bottom: -7px;
+	border: 2px dashed #333;
+	opacity: 0.5;
 }
 
 .wpview-wrap.wpview-selection-before:before,
@@ -137,6 +138,7 @@ hr[data-mce-selected]:before {
 .wpview-wrap .toolbar div {
 	background: none;
 	box-shadow: none;
+	color: inherit;
 	display: block;
 	margin: 0;
 	opacity: 0.5;
@@ -149,6 +151,7 @@ hr[data-mce-selected]:before {
 .wpview-wrap .toolbar div:hover {
 	background: none;
 	box-shadow: none;
+	color: inherit;
 	opacity: 1;
 }
 
@@ -173,9 +176,14 @@ hr[data-mce-selected]:before {
 	position: absolute;
 	z-index: 100;
 	cursor: pointer;
-	-webkit-transition: color 0.1s ease-in 0;
-	-moz-transition: color 0.1s ease-in 0;
-	transition: color 0.1s ease-in 0;
+	opacity: 0.5;
+	-webkit-transition: opacity 0.1s ease-in 0;
+	-moz-transition: opacity 0.1s ease-in 0;
+	transition: opacity 0.1s ease-in 0;
+}
+
+#wp-insert-block:hover {
+	opacity: 1;
 }
 
 #wp-insert-block,
@@ -195,37 +203,36 @@ hr[data-mce-selected]:before {
 	transition: none;
 }
 
-.wpview-type-more p,
-.wpview-type-nextpage p {
+.wpview-type-more p {
 	text-align: center;
 	position: relative;
 	overflow: hidden;
+	opacity: 0.5;
 }
 
-.wpview-type-more span,
-.wpview-type-nextpage span {
+.wpview-wrap[data-mce-selected] .wpview-type-more p {
+	opacity: 1;
+}
+
+.wpview-type-more span {
 	position: relative;
 }
 
 .wpview-type-more span:before,
-.wpview-type-more span:after,
-.wpview-type-nextpage span:before,
-.wpview-type-nextpage span:after {
+.wpview-type-more span:after {
 	content: '';
 	position: absolute;
-	border-bottom: 2px dashed #eee;
+	border-bottom: 2px dashed #333;
 	top: 50%;
 	width: 1000px;
 }
 
-.wpview-type-more span:before,
-.wpview-type-nextpage span:before {
+.wpview-type-more span:before {
 	right: 100%;
 	margin-right: 5px;
 }
 
-.wpview-type-more span:after,
-.wpview-type-nextpage span:after {
+.wpview-type-more span:after {
 	left: 100%;
 	margin-left: 5px;
 }
