@@ -492,12 +492,16 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 
 	// Make sure we don't eat any content.
 	editor.on( 'keydown', function( event ) {
-		var keyCode = event.keyCode,
-			view;
+		var selection = editor.selection,
+			range, view;
 
-		if ( keyCode === VK.BACKSPACE ) {
-			view = isView( editor.selection.getNode().previousSibling );
-			if ( view ) {
+		if ( event.keyCode === VK.BACKSPACE ) {
+			if ( ( range = selection.getRng() ) &&
+					range.startOffset === 0 &&
+					range.endOffset === 0 &&
+					selection.isCollapsed() &&
+					( view = isView( selection.getNode().previousSibling ) ) &&
+					! editor.dom.isEmpty( selection.getNode() ) ) {
 				setViewCursor( false, view );
 				event.preventDefault();
 			}
