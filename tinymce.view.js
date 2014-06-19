@@ -7,7 +7,8 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 		Env = tinymce.Env,
 		TreeWalker = tinymce.dom.TreeWalker,
 		VK = tinymce.util.VK,
-		toRemove = false;
+		toRemove = false,
+		cursorInterval;
 
 	function isView( node ) {
 		return editor.dom.getParent( node, function( node ) {
@@ -53,6 +54,40 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 
 	function _stop( event ) {
 		event.stopPropagation();
+	}
+
+	function setCursorBefore( viewNode ) {
+		editor.selection.setCursorLocation( editor.dom.select( '.wpview-selection-before', viewNode )[0] );
+	}
+
+	function setCursorAfter( viewNode ) {
+		editor.selection.setCursorLocation( editor.dom.select( '.wpview-selection-after', viewNode )[0] );
+	}
+
+	function handleEnter( view, before ) {
+		var dom = editor.dom,
+			padNode;
+
+		if ( ! before && dom.isEmpty( view.nextSibling ) && view.nextSibling.nodeName === 'P' ) {
+			padNode = view.nextSibling;
+		} else if ( before && dom.isEmpty( view.previousSibling ) && view.previousSibling.nodeName === 'P' ) {
+			padNode = view.previousSibling;
+		} else {
+			padNode = dom.create( 'p' );
+
+			if ( ! ( Env.ie && Env.ie < 11 ) ) {
+				padNode.innerHTML = '<br data-mce-bogus="1">';
+			}
+
+			if ( before ) {
+				view.parentNode.insertBefore( padNode, view );
+			} else {
+				dom.insertAfter( padNode, view );
+			}
+		}
+
+		deselect();
+		editor.selection.setCursorLocation( padNode, 0 );
 	}
 
 	function select( viewNode ) {
@@ -108,27 +143,6 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 		}
 
 		selected = null;
-	}
-
-	function selectSiblingView( node, direction ) {
-		var body = editor.getBody(),
-			sibling = direction === 'previous' ? 'previousSibling' : 'nextSibling';
-
-		while ( node && node.parentNode !== body ) {
-			if ( node[sibling] ) {
-				// The caret will be in another element
-				return false;
-			}
-
-			node = node.parentNode;
-		}
-
-		if ( isView( node[sibling] ) ) {
-			select( node[sibling] );
-			return true;
-		}
-
-		return false;
 	}
 
 	// Check if the `wp.mce` API exists.
@@ -360,10 +374,9 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
     // Handle key presses for selected views.
 	editor.on( 'keydown', function( event ) {
 		var dom = editor.dom,
-			body = editor.getBody(),
 			keyCode = event.keyCode,
 			selection = editor.selection,
-			view, padNode;
+			view;
 
 		// If a view isn't selected, let the event go on its merry way.
 		if ( ! selected ) {
@@ -395,48 +408,14 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 
 		// Deselect views with the arrow keys
 		if ( keyCode === VK.LEFT || keyCode === VK.UP ) {
+			setCursorBefore( view );
 			deselect();
-			// Handle case where two views are stacked on top of one another
-			if ( isView( view.previousSibling ) ) {
-				select( view.previousSibling );
-			// Handle case where view is the first node
-			} else if ( ! view.previousSibling ) {
-				padNode = createPadNode();
-				body.insertBefore( padNode, body.firstChild );
-				selection.setCursorLocation( body.firstChild, 0 );
-			// Handle default case
-			} else {
-				selection.select( view.previousSibling, true );
-				selection.collapse();
-			}
 		} else if ( keyCode === VK.RIGHT || keyCode === VK.DOWN ) {
+			setCursorAfter( view );
 			deselect();
-			// Handle case where the next node is another wpview
-			if ( isView( view.nextSibling ) ) {
-				select( view.nextSibling );
-			// Handle case were the view is that last node
-			} else if ( ! view.nextSibling ) {
-				padNode = createPadNode();
-				body.appendChild( padNode );
-				selection.setCursorLocation( body.lastChild, 0 );
-			// Handle default case where the next node is a non-wpview
-			} else {
-				selection.setCursorLocation( view.nextSibling, 0 );
-			}
 		// Create a new paragraph when pressing enter/return.
 		} else if ( keyCode === VK.ENTER ) {
-			if ( dom.isEmpty( view.nextSibling ) && view.nextSibling.nodeName === 'P' ) {
-				padNode = view.nextSibling;
-			} else {
-				padNode = dom.create( 'p' );
-				// BR is needed in empty blocks on non IE browsers.
-				if ( ! ( Env.ie && Env.ie < 11 ) ) {
-					padNode.innerHTML = '<br data-mce-bogus="1">';
-				}
-				dom.insertAfter( padNode, selected );
-			}
-			deselect();
-			selection.setCursorLocation( padNode, 0 );
+			handleEnter( view );
 		// If delete or backspace is pressed, delete the view.
 		} else if ( keyCode === VK.DELETE || keyCode === VK.BACKSPACE ) {
 			dom.remove( selected );
@@ -449,56 +428,38 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 	editor.on( 'keydown', function( event ) {
 		var keyCode = event.keyCode,
 			dom = editor.dom,
-			range = editor.selection.getRng(),
-			startNode = range.startContainer,
-			body = editor.getBody(),
-			node, container;
+			node = editor.selection.getNode(),
+			cursorBefore = ( node.className === 'wpview-selection-before' ),
+			cursorAfter = ( node.className === 'wpview-selection-after' ),
+			view;
 
-		if ( ! startNode || startNode === body || event.metaKey || event.ctrlKey ) {
+		if ( ! cursorBefore && ! cursorAfter ) {
 			return;
 		}
 
-		if ( keyCode === VK.UP || keyCode === VK.LEFT ) {
-			if ( keyCode === VK.LEFT && ( ! range.collapsed || range.startOffset !== 0 ) ) {
-				// Not at the beginning of the current range
-				return;
-			}
-
-			if ( ! ( node = dom.getParent( startNode, dom.isBlock ) ) ) {
-				return;
-			}
-
-			if ( selectSiblingView( node, 'previous' ) ) {
-				event.preventDefault();
-			}
-		} else if ( keyCode === VK.DOWN || keyCode === VK.RIGHT ) {
-			if ( ! ( node = dom.getParent( startNode, dom.isBlock ) ) ) {
-				return;
-			}
-
-			if ( keyCode === VK.RIGHT ) {
-				container = range.endContainer;
-
-				if ( ! range.collapsed || ( range.startOffset === 0 && container.length ) ||
-					container.nextSibling ||
-					( container.nodeType === 3 && range.startOffset !== container.length ) ) { // Not at the end of the current range
-
-					return;
-				}
-
-				// In a child element
-				while ( container && container !== node && container !== body ) {
-					if ( container.nextSibling ) {
-						return;
-					}
-					container = container.parentNode;
-				}
-			}
-
-			if ( selectSiblingView( node, 'next' ) ) {
-				event.preventDefault();
-			}
+		if ( event.metaKey || event.ctrlKey || ( keyCode >= 112 && keyCode <= 123 ) ) {
+			return;
 		}
+
+		if ( ( cursorBefore && ( keyCode === VK.UP || keyCode === VK.LEFT ) ) ||
+			( cursorAfter && ( keyCode === VK.DOWN || keyCode === VK.RIGHT ) ) ) {
+			return;
+		}
+
+		view = isView( node );
+
+		if ( ( cursorAfter && ( keyCode === VK.UP || keyCode === VK.LEFT ) ) ||
+			( cursorBefore && ( keyCode === VK.DOWN || keyCode === VK.RIGHT ) ) ) {
+			select( view );
+		} else if ( cursorAfter && keyCode === VK.BACKSPACE ) {
+			dom.remove( view );
+		} else if ( cursorAfter && keyCode === VK.ENTER ) {
+			handleEnter( view );
+		} else if ( cursorBefore && keyCode === VK.ENTER ) {
+			handleEnter( view , true);
+		}
+
+		event.preventDefault();
 	});
 
 	editor.on( 'keyup', function( event ) {
@@ -534,6 +495,31 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 			}
 		}
 	});
+
+	editor.on( 'nodechange', function( event ) {
+		var dom = editor.dom,
+			views = editor.dom.select( '.wpview-wrap' ),
+			className = event.element.className,
+			view = event.element.parentNode;
+
+		clearInterval( cursorInterval );
+
+		dom.removeClass( views, 'wpview-selection-before' );
+		dom.removeClass( views, 'wpview-selection-after' );
+		dom.removeClass( views, 'wpview-cursor-hide' );
+
+		if ( ! selected && className === 'wpview-selection-before' || className === 'wpview-selection-after' ) {
+			dom.addClass( view, className );
+
+			cursorInterval = setInterval( function() {
+				if ( dom.hasClass( view, 'wpview-cursor-hide' ) ) {
+					dom.removeClass( view, 'wpview-cursor-hide' );
+				} else {
+					dom.addClass( view, 'wpview-cursor-hide' );
+				}
+			}, 500 );
+		}
+	} );
 
 	return {
 		isView: isView,

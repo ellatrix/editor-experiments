@@ -48,6 +48,25 @@ p.empty:after {
 	width: 100%;
 }
 
+.wpview-wrap > p {
+	-moz-user-select: text;
+	-webkit-user-select: text;
+	-ms-user-select: text;
+	user-select: text;
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: -1;
+	clip: rect( 1px 1px 1px 1px );
+	clip: rect( 1px, 1px, 1px, 1px );
+	overflow: hidden;
+	outline: 0;
+	padding: 0;
+	border: 0;
+	width: 1px;
+	height: 1px;
+}
+
 .wpview-wrap .wpview-clipboard {
 	-moz-user-select: text;
 	-webkit-user-select: text;
@@ -77,6 +96,32 @@ hr[data-mce-selected]:before {
 	right: -5px;
 	bottom: -5px;
 	outline: 2px dashed #aaa;
+}
+
+.wpview-wrap.wpview-selection-before:before,
+.wpview-wrap.wpview-selection-after:before {
+	content: '';
+	margin: 0;
+	padding: 0;
+	position: absolute;
+	top: -2px;
+	left: -2px;
+	bottom: -2px;
+	width: 1px;
+	background-color: black;
+	-webkit-transition: opacity 0.15s ease-out;
+	-moz-transition: opacity 0.15s ease-out;
+	transition: opacity 0.15s ease-out;
+	opacity: 1;
+}
+
+.wpview-wrap.wpview-selection-after:before {
+	left: auto;
+	right: -2px;
+}
+
+.wpview-wrap.wpview-cursor-hide:before {
+	opacity: 0;
 }
 
 .wpview-wrap .toolbar {

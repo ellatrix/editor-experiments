@@ -5,6 +5,14 @@ tinymce.PluginManager.add( 'insert', function( editor ) {
 	var insert, insertLocation,
 		matchInsert = /<(P|BLOCKQUOTE)[^>]+id="wp-insert-block"[^>]*>[\s\S]*<\/(P|BLOCKQUOTE)>/gi;
 
+	function isView( node ) {
+		var wpview = editor.plugins.wpview;
+		if ( wpview ) {
+			return wpview.isView( node );
+		}
+		return false;
+	}
+
 	editor.on( 'keyup click ExecCommand AddUndo', function( event ) {
 
 		var dom = editor.dom,
@@ -31,7 +39,7 @@ tinymce.PluginManager.add( 'insert', function( editor ) {
 
 		removeElement();
 
-		if ( ! selection ) {
+		if ( ! selection || isView( selection ) ) {
 			return;
 		}
 

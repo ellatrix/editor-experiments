@@ -54,17 +54,21 @@ window.wp = window.wp || {};
 				loadIframe = ( html && html.indexOf( '<script' ) !== -1 ) || ( this.settings && this.settings.scripts );
 
 			this.setContent(
-				'<div class="toolbar">' +
-					( _.isFunction( views[ this.type ].edit ) ? '<div class="dashicons dashicons-edit edit"></div>' : '' ) +
-					'<div class="dashicons dashicons-no-alt remove"></div>' +
+				'<p class="wpview-selection-before">\u00a0</p>' +
+				'<div class="wpview-body" contenteditable="false">' +
+					'<div class="toolbar">' +
+						( _.isFunction( views[ this.type ].edit ) ? '<div class="dashicons dashicons-edit edit"></div>' : '' ) +
+						'<div class="dashicons dashicons-no-alt remove"></div>' +
+					'</div>' +
+					'<div class="wpview-content">' +
+						( loadIframe ? '' : html ) +
+					'</div>' +
+					( this.overlay ? '<div class="wpview-overlay"></div>' : '' ) +
+					// The <ins> is used to mark the end of the wrapper div (has to be the last child node).
+					// Needed when comparing the content as string for preventing extra undo levels.
+					'<ins data-wpview-end="1"></ins>' +
 				'</div>' +
-				'<div class="wpview-content">' +
-					( loadIframe ? '' : html ) +
-				'</div>' +
-				( this.overlay ? '<div class="wpview-overlay"></div>' : '' ) +
-				// The <ins> is used to mark the end of the wrapper div (has to be the last child node).
-				// Needed when comparing the content as string for preventing extra undo levels.
-				'<ins data-wpview-end="1"></ins>',
+				'<p class="wpview-selection-after">\u00a0</p>',
 				function( self, editor, node ) {
 					$( self ).trigger( 'ready', [ editor, node ] );
 				},
@@ -180,7 +184,7 @@ window.wp = window.wp || {};
 					$( editor.getBody() )
 					.find( '[data-wpview-text="' + this.encodedText + '"]' )
 					.each( function ( i, element ) {
-						var contentWrap = $( element ).children( '.wpview-content' ),
+						var contentWrap = $( element ).find( '.wpview-content' ),
 							wrap = element,
 							iframe, doc, iframeContent, contentCSS;
 
@@ -202,7 +206,7 @@ window.wp = window.wp || {};
 							}
 						}
 
-						element = $( element ).children( '.wpview-content' )[0];
+						element = $( element ).find( '.wpview-content' )[0];
 
 						if ( loadIframe && ! replace ) {
 							iframe = editor.dom.add( element, 'iframe', {
@@ -430,8 +434,7 @@ window.wp = window.wp || {};
 				attrs: {
 					'class': 'wpview-wrap wpview-type-' + viewType,
 					'data-wpview-text': encodedText,
-					'data-wpview-type': viewType,
-					'contenteditable': 'false'
+					'data-wpview-type': viewType
 				},
 				content: '\u00a0'
 			} );
