@@ -56,12 +56,10 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 		event.stopPropagation();
 	}
 
-	function setCursorBefore( viewNode ) {
-		editor.selection.setCursorLocation( editor.dom.select( '.wpview-selection-before', viewNode )[0], 1 );
-	}
-
-	function setCursorAfter( viewNode ) {
-		editor.selection.setCursorLocation( editor.dom.select( '.wpview-selection-after', viewNode )[0], 1 );
+	function setViewCursor( before, view ) {
+		var location = before ? 'before' : 'after',
+			offset = before ? 0 : 1;
+		editor.selection.setCursorLocation( editor.dom.select( '.wpview-selection-' + location, view )[0], offset );
 	}
 
 	function handleEnter( view, before ) {
@@ -88,6 +86,7 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 
 		deselect();
 		editor.selection.setCursorLocation( padNode, 0 );
+		editor.nodeChanged();
 	}
 
 	function select( viewNode ) {
@@ -406,17 +405,14 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 			return;
 		}
 
-		// Deselect views with the arrow keys
 		if ( keyCode === VK.LEFT || keyCode === VK.UP ) {
-			setCursorBefore( view );
+			setViewCursor( true, view );
 			deselect();
 		} else if ( keyCode === VK.RIGHT || keyCode === VK.DOWN ) {
-			setCursorAfter( view );
+			setViewCursor( false, view );
 			deselect();
-		// Create a new paragraph when pressing enter/return.
 		} else if ( keyCode === VK.ENTER ) {
 			handleEnter( view );
-		// If delete or backspace is pressed, delete the view.
 		} else if ( keyCode === VK.DELETE || keyCode === VK.BACKSPACE ) {
 			dom.remove( selected );
 		}
@@ -428,7 +424,8 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 	editor.on( 'keydown', function( event ) {
 		var keyCode = event.keyCode,
 			dom = editor.dom,
-			node = editor.selection.getNode(),
+			selection = editor.selection,
+			node = selection.getNode(),
 			cursorBefore = ( node.className === 'wpview-selection-before' ),
 			cursorAfter = ( node.className === 'wpview-selection-after' ),
 			view;
@@ -441,26 +438,71 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 			return;
 		}
 
-		if ( ( cursorBefore && ( keyCode === VK.UP || keyCode === VK.LEFT ) ) ||
-			( cursorAfter && ( keyCode === VK.DOWN || keyCode === VK.RIGHT ) ) ) {
+		if ( ( cursorBefore && keyCode === VK.LEFT ) || ( cursorAfter && keyCode === VK.RIGHT ) ) {
 			return;
 		}
 
 		view = isView( node );
 
-		if ( ( cursorAfter && ( keyCode === VK.UP || keyCode === VK.LEFT ) ) ||
-			( cursorBefore && ( keyCode === VK.DOWN || keyCode === VK.RIGHT ) ) ) {
+		if ( ( cursorAfter && keyCode === VK.UP ) || ( cursorBefore && keyCode === VK.BACKSPACE ) ) {
+			if ( isView( view.previousSibling ) ) {
+				setViewCursor( false, view.previousSibling );
+			} else {
+				selection.select( view.previousSibling, true );
+				selection.collapse();
+			}
+			event.preventDefault();
+		} else if ( cursorAfter && keyCode === VK.DOWN ) {
+			if ( isView( view.nextSibling ) ) {
+				setViewCursor( false, view.nextSibling );
+			} else {
+				return;
+			}
+			event.preventDefault();
+		} else if ( cursorBefore && keyCode === VK.UP ) {
+			if ( isView( view.previousSibling ) ) {
+				setViewCursor( true, view.previousSibling );
+			} else {
+				return;
+			}
+			event.preventDefault();
+		} else if ( cursorBefore && keyCode === VK.DOWN ) {
+			if ( isView( view.nextSibling ) ) {
+				setViewCursor( true, view.nextSibling );
+			} else {
+				selection.setCursorLocation( view.nextSibling, 0 );
+			}
+			event.preventDefault();
+		} else if ( ( cursorAfter && keyCode === VK.LEFT ) || ( cursorBefore && keyCode === VK.RIGHT ) ) {
 			select( view );
+			event.preventDefault();
 		} else if ( cursorAfter && keyCode === VK.BACKSPACE ) {
 			dom.remove( view );
-		} else if ( cursorAfter && keyCode === VK.ENTER ) {
+			event.preventDefault();
+		} else if ( cursorAfter ) {
 			handleEnter( view );
-		} else if ( cursorBefore && keyCode === VK.ENTER ) {
+		} else if ( cursorBefore ) {
 			handleEnter( view , true);
 		}
 
-		event.preventDefault();
-	});
+		if ( keyCode === VK.ENTER ) {
+			event.preventDefault();
+		}
+	} );
+
+	// Make sure we don't eat any content.
+	editor.on( 'keydown', function( event ) {
+		var keyCode = event.keyCode,
+			view;
+
+		if ( keyCode === VK.BACKSPACE ) {
+			view = isView( editor.selection.getNode().previousSibling );
+			if ( view ) {
+				setViewCursor( false, view );
+				event.preventDefault();
+			}
+		}
+	} );
 
 	editor.on( 'keyup', function( event ) {
 		var padNode,
