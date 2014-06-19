@@ -66,9 +66,9 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 		var dom = editor.dom,
 			padNode;
 
-		if ( ! before && dom.isEmpty( view.nextSibling ) && view.nextSibling.nodeName === 'P' ) {
+		if ( ! before && view.nextSibling && dom.isEmpty( view.nextSibling ) && view.nextSibling.nodeName === 'P' ) {
 			padNode = view.nextSibling;
-		} else if ( before && dom.isEmpty( view.previousSibling ) && view.previousSibling.nodeName === 'P' ) {
+		} else if ( before && view.previousSibling && dom.isEmpty( view.previousSibling ) && view.previousSibling.nodeName === 'P' ) {
 			padNode = view.previousSibling;
 		} else {
 			padNode = dom.create( 'p' );
@@ -370,7 +370,7 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 		}
 	});
 
-    // Handle key presses for selected views.
+	// Handle key presses for selected views.
 	editor.on( 'keydown', function( event ) {
 		var dom = editor.dom,
 			keyCode = event.keyCode,
@@ -445,32 +445,48 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 		view = isView( node );
 
 		if ( ( cursorAfter && keyCode === VK.UP ) || ( cursorBefore && keyCode === VK.BACKSPACE ) ) {
-			if ( isView( view.previousSibling ) ) {
-				setViewCursor( false, view.previousSibling );
+			if ( view.previousSibling ) {
+				if ( isView( view.previousSibling ) ) {
+					setViewCursor( false, view.previousSibling );
+				} else {
+					selection.select( view.previousSibling, true );
+					selection.collapse();
+				}
 			} else {
-				selection.select( view.previousSibling, true );
-				selection.collapse();
+				handleEnter( view, true );
 			}
 			event.preventDefault();
 		} else if ( cursorAfter && keyCode === VK.DOWN ) {
-			if ( isView( view.nextSibling ) ) {
-				setViewCursor( false, view.nextSibling );
+			if ( view.nextSibling ) {
+				if ( isView( view.nextSibling ) ) {
+					setViewCursor( false, view.nextSibling );
+				} else {
+					return;
+				}
 			} else {
-				return;
+				handleEnter( view );
 			}
 			event.preventDefault();
 		} else if ( cursorBefore && keyCode === VK.UP ) {
-			if ( isView( view.previousSibling ) ) {
-				setViewCursor( true, view.previousSibling );
+			if ( view.previousSibling ) {
+				if ( isView( view.previousSibling ) ) {
+					setViewCursor( true, view.previousSibling );
+				} else {
+					return;
+				}
 			} else {
-				return;
+				handleEnter( view, true );
 			}
 			event.preventDefault();
 		} else if ( cursorBefore && keyCode === VK.DOWN ) {
-			if ( isView( view.nextSibling ) ) {
-				setViewCursor( true, view.nextSibling );
+			if ( view.previousSibling ) {
+				if ( isView( view.nextSibling ) ) {
+					setViewCursor( true, view.nextSibling );
+				} else {
+					selection.setCursorLocation( view.nextSibling, 0 );
+				}
 			} else {
-				selection.setCursorLocation( view.nextSibling, 0 );
+				handleEnter( view );
 			}
 			event.preventDefault();
 		} else if ( ( cursorAfter && keyCode === VK.LEFT ) || ( cursorBefore && keyCode === VK.RIGHT ) ) {
