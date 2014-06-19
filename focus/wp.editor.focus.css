@@ -22,3 +22,7 @@ div.mce-toolbar-grp > div {
 .mce-toolbar-grp {
 	z-index: 1000;
 }
+
+#post-status-info {
+	cursor: default;
+}
