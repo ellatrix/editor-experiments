@@ -2,8 +2,6 @@
 
 tinymce.PluginManager.add( 'general', function( editor ) {
 
-	var colors = [], styleElement;
-
 	editor.addButton( 'switchmode', {
 		classes: 'container btn-group switchmode',
 		type: 'buttongroup',
@@ -34,14 +32,14 @@ tinymce.PluginManager.add( 'general', function( editor ) {
 
 	editor.on( 'init', function() {
 
-		setTimeout( function() { editor.setUIColor() }, 250 );
+		setTimeout( function() { editor.setUIColor(); }, 250 );
 
 	} );
 
 	// This should move to post.js if added to core.
 	jQuery( '#post-formats-select input.post-format' ).on( 'change.set-editor-class', function() {
 
-		setTimeout( function() { editor.setUIColor() }, 250 );
+		setTimeout( function() { editor.setUIColor(); }, 250 );
 
 	} );
 

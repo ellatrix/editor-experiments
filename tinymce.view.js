@@ -8,13 +8,13 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 		TreeWalker = tinymce.dom.TreeWalker,
 		VK = tinymce.util.VK,
 		toRemove = false,
-		cursorInterval;
+		isView, cursorInterval;
 
-	function isView( node ) {
+	editor.isView = isView = function( node ) {
 		return editor.dom.getParent( node, function( node ) {
 			return editor.dom.hasClass( node, 'wpview-wrap' );
 		} );
-	}
+	};
 
 	function createPadNode() {
 		return editor.dom.create( 'p', { 'data-wpview-pad': 1 },
@@ -57,11 +57,11 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 	}
 
 	function setCursorBefore( viewNode ) {
-		editor.selection.setCursorLocation( editor.dom.select( '.wpview-selection-before', viewNode )[0] );
+		editor.selection.setCursorLocation( editor.dom.select( '.wpview-selection-before', viewNode )[0], 1 );
 	}
 
 	function setCursorAfter( viewNode ) {
-		editor.selection.setCursorLocation( editor.dom.select( '.wpview-selection-after', viewNode )[0] );
+		editor.selection.setCursorLocation( editor.dom.select( '.wpview-selection-after', viewNode )[0], 1 );
 	}
 
 	function handleEnter( view, before ) {
@@ -522,7 +522,6 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 	} );
 
 	return {
-		isView: isView,
 		getViewText: getViewText,
 		setViewText: setViewText,
 		select: select
