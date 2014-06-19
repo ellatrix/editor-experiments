@@ -96,6 +96,8 @@ tinymce.PluginManager.add( 'general', function( editor ) {
 	addUIColor( '.wpview-type-nextpage[data-mce-selected] span', 'color', '1' );
 	addUIColor( '.wpview-error', 'color', '0.5' );
 
+	addUIColor( '.wpview-wrap.wpview-selection-before:before,.wpview-wrap.wpview-selection-after:before', 'background-color', '1' );
+
 	return {
 		setUIColors: setUIColors,
 		addUIColor: addUIColor
