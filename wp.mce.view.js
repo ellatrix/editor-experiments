@@ -50,10 +50,12 @@ window.wp = window.wp || {};
 		initialize: function() {},
 		getHtml: function() {},
 		render: function() {
-			var html = this.getHtml.apply( this, _.values( this.options ) ) || '',
-				loadIframe = ( html && html.indexOf( '<script' ) !== -1 ) || ( this.settings && this.settings.scripts );
+			var self = this,
+				html = this.getHtml.apply( this, _.values( this.options ) ) || '',
+				loadIframe = ( html && html.indexOf( '<script' ) !== -1 ) || ( this.settings && this.settings.scripts ),
+				scripts = [];
 
-			this.setContent(
+			this.setWrap(
 				'<p class="wpview-selection-before">\u00a0</p>' +
 				'<div class="wpview-body" contenteditable="false">' +
 					'<div class="toolbar">' +
@@ -69,10 +71,28 @@ window.wp = window.wp || {};
 					'<ins data-wpview-end="1"></ins>' +
 				'</div>' +
 				'<p class="wpview-selection-after">\u00a0</p>',
-				function( self, editor, node ) {
+				function( editor, node ) {
+					if ( loadIframe ) {
+						_.each( self.settings.scripts, function( value ) {
+							scripts.push( tinymce.settings._scripts[ value ].src );
+						} );
+
+						if ( self.settings.previewjs ) {
+							scripts.push( self.settings.previewjs );
+						}
+
+						self.setSingleIframeContent( {
+							html: html,
+							styles: [ tinymce.settings.iframeViewCSS ],
+							scripts: scripts,
+							window: {
+								attributes: self.shortcode.attrs.named
+							}
+						}, editor, node );
+					}
+
 					$( self ).trigger( 'ready', [ editor, node ] );
-				},
-				null, true, loadIframe
+				}
 			);
 		},
 		refresh: function( attributes, node ) {
@@ -95,168 +115,156 @@ window.wp = window.wp || {};
 			wp.mce.views.refreshView( this, text, node );
 		},
 		modal: function( node, callback ) {
-			var modal, modalInner,
-				self = this,
-				template,
-				postDivRich = tinymce.DOM.select( '#postdivrich' )[0],
-				scrollY = window.pageYOffset,
-				postDivRichTop = postDivRich.getBoundingClientRect().top + scrollY,
-				postDivRichHeight = postDivRich.offsetHeight,
-				windowHeight = window.document.documentElement.clientHeight,
-				editorBody = tinymce.activeEditor.getBody();
+			this.setSingleIframeContent( {
+				html: this.editTemplate()
+			}, tinymce.activeEditor, node );
 
-			wp.editor.fade.Out();
-
-			tinymce.DOM.setStyles( postDivRich, { opacity: 0.1 } );
-
-			modalInner = tinymce.DOM.create( 'DIV', { id: 'wp-block-modal-inner' } );
-			modal = tinymce.DOM.create( 'DIV', { id: 'wp-block-modal' }, modalInner );
-
-			tinymce.DOM.setStyles( modalInner, {
-				left: tinymce.DOM.getPos( postDivRich ).x + tinymce.activeEditor.dom.getPos( editorBody ).x - 10,
-				width: editorBody.offsetWidth + 20
-			} );
-
-			document.body.appendChild( modal );
-
-			template = $( '#' + this.type + '-shortcode-edit-template' ).clone();
-
-			$( modalInner ).append( template );
-
-			$.each( this.shortcode.attrs.named, function( key, value ) {
-				var input = template.find( 'input[name="' + key + '"]' );
-				if ( input ) {
-					if ( input.is( ':checkbox' ) ) {
-						input.prop( 'checked', value );
-					} else {
-						input.val( value );
-					}
-				}
-			} );
-
-			template.show();
-
-			template.on( 'submit', function( event ) {
-				event.preventDefault();
-
-				$.fn.serializeObject = function() {
-					var object = {},
-						array = this.serializeArray();
-					$.each( array, function() {
-						if ( object[ this.name ] !== undefined ) {
-							if ( ! object[ this.name ].push ) {
-								object[ this.name ] = [ object[ this.name ] ];
-							}
-							object[ this.name ].push( this.value || '' );
-						} else {
-							object[ this.name ] = this.value || '';
-						}
-					} );
-					return object;
-				};
-
-				self.refresh( jQuery( this ).serializeObject(), node );
-
-				wp.editor.fade.auto();
-
-				tinymce.DOM.removeClass( document.body, 'wp-block-modal-open' );
-				tinymce.DOM.setStyles( postDivRich, { opacity: 1 } );
-				tinymce.DOM.remove( modal );
-			} );
-
-			// We're blocking scrolling for the page, so make sure the block modal is fully in the viewport.
-			if ( postDivRichTop - 32 > scrollY ) {
-				window.scrollTo( 0, postDivRichTop - 32 ); // Admin bar.
-			} else if ( postDivRichTop + postDivRichHeight < scrollY + windowHeight ) {
-				window.scrollTo( 0, postDivRichTop + postDivRichHeight - windowHeight );
+			if ( callback ) {
+				callback();
 			}
-
-			tinymce.DOM.addClass( document.body, 'wp-block-modal-open' );
-
-			callback( template );
 		},
 		unbind: function() {},
-		setContent: function( html, callback, replace, setWrap, loadIframe ) {
+		getNodes: function( callback ) {
+			var nodes = [];
+
 			_.each( tinymce.editors, function( editor ) {
-				var self = this;
 				if ( editor.plugins.wpview ) {
-					/* jshint scripturl: true */
 					$( editor.getBody() )
 					.find( '[data-wpview-text="' + this.encodedText + '"]' )
-					.each( function ( i, element ) {
-						var contentWrap = $( element ).find( '.wpview-content' ),
-							wrap = element,
-							iframe, doc, iframeContent, contentCSS;
-
-						if ( contentWrap.length && ! setWrap ) {
-							element = contentWrap = contentWrap[0];
+					.each( function ( i, node ) {
+						if ( callback ) {
+							callback( editor, node );
 						}
 
-						if ( _.isString( html ) ) {
-							if ( replace ) {
-								element = editor.dom.replace( editor.dom.createFragment( html ), wrap );
-							} else {
-								editor.dom.setHTML( element, html );
-							}
-						} else {
-							if ( replace ) {
-								element = editor.dom.replace( html, wrap );
-							} else {
-								element.appendChild( html );
-							}
-						}
-
-						element = $( element ).find( '.wpview-content' )[0];
-
-						if ( loadIframe && ! replace ) {
-							iframe = editor.dom.add( element, 'iframe', {
-								src: 'javascript:""',
-								frameBorder: '0',
-								allowTransparency: 'true',
-								style: {
-									width: '100%',
-									height: '1px',
-									display: 'block'
-								}
-							} );
-							contentCSS = [ tinymce.settings.iframeViewCSS ];
-							iframeContent = '<!DOCTYPE html><html><head>';
-							iframeContent += '<meta charset="utf-8" />';
-							for ( i = 0; i < contentCSS.length; i++ ) {
-								iframeContent += '<link type="text/css" rel="stylesheet" href="' + contentCSS[i] + '" />';
-							}
-							if ( self.settings.scripts ) {
-								for ( i = 0; i < self.settings.scripts.length; i++ ) {
-									iframeContent += '<script type="text/javascript" src="' + tinymce.settings._scripts[ self.settings.scripts[i] ].src + '"></script>';
-								}
-							}
-							if ( self.settings.previewjs ) {
-								iframeContent += '<script type="text/javascript" src="' + self.settings.previewjs + '"></script>';
-							}
-							iframeContent += '</head><body onload="resize()"></body></html>';
-							iframe.contentWindow.attributes = self.shortcode.attrs.named;
-							iframe.contentWindow.resize = function() {
-								window.parent.postMessage( {
-									height: $( iframe.contentWindow.document ).height()
-								}, '*' );
-							};
-							window.addEventListener( 'message', function ( event ) {
-								if ( event.data.height ) {
-									$( iframe ).height( event.data.height );
-								}
-							}, false );
-							doc = iframe.contentWindow.document;
-							doc.open();
-							doc.write( iframeContent );
-							doc.close();
-						}
-
-						if ( _.isFunction( callback ) ) {
-							callback( self, editor, element );
-						}
+						nodes.push( node );
 					} );
 				}
 			}, this );
+
+			return nodes;
+		},
+		setSingleWrap: function( html, editor, node, callback ) {
+			if ( _.isString( html ) ) {
+				editor.dom.setHTML( node, html );
+			} else {
+				editor.dom.setHTML( node, '' );
+				node.appendChild( html );
+			}
+
+			if ( callback ) {
+				callback( editor, node );
+			}
+		},
+		setWrap: function( html, callback ) {
+			var self = this;
+
+			this.getNodes( function( editor, node ) {
+				self.setSingleWrap( html, editor, node, callback );
+			} );
+		},
+		setSingleContent: function( html, editor, node, callback ) {
+			this.setSingleWrap( html, editor, $( node ).find( '.wpview-content' )[0], callback );
+		},
+		setContent: function( html, callback ) {
+			var self = this;
+
+			this.getNodes( function( editor, node ) {
+				self.setSingleContent( html, editor, node, callback );
+			} );
+		},
+		replace: function( html, callback ) {
+			this.getNodes( function( editor, node ) {
+				node = ( _.isString( html ) ? editor.dom.createFragment( html ) : html );
+
+				editor.dom.replace( node );
+
+				if ( callback ) {
+					callback( editor, node );
+				}
+			} );
+		},
+		/* jshint scripturl: true */
+		setSingleIframeContent: function( options, editor, node, callback ) {
+			var MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver,
+				iframe, iframeDoc, i, resize, styles = '', scripts = '';
+
+			node = $( node ).find( '.wpview-content' )[0];
+
+			editor.dom.setHTML( node, '' );
+
+			iframe = editor.dom.add( node, 'iframe', {
+				src: 'javascript:""',
+				frameBorder: '0',
+				allowTransparency: 'true',
+				style: {
+					width: '100%',
+					display: 'block'
+				}
+			} );
+
+			iframeDoc = iframe.contentWindow.document;
+
+			if ( options.styles ) {
+				_.each( options.styles, function( value ) {
+					styles += '<link type="text/css" rel="stylesheet" href="' + value + '" />';
+				} );
+			}
+
+			if ( options.scripts ) {
+				_.each( options.scripts, function( value ) {
+					scripts += '<script type="text/javascript" src="' + value + '"></script>';
+				} );
+			}
+
+			if ( options.window ) {
+				_.each( options.window, function( value, key ) {
+					iframe.contentWindow[key] = value;
+				} );
+			}
+
+			iframeDoc.write(
+				'<!DOCTYPE html>' +
+				'<html>' +
+					'<head>' +
+						'<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />' +
+						styles + scripts +
+					'</head>' +
+					'<body>' +
+						( options.html ? options.html : '' ) +
+					'</body>' +
+				'</html>'
+			);
+			iframeDoc.close();
+
+			resize = function() {
+				$( iframe ).height( $( iframeDoc ).height() );
+			};
+
+			if ( MutationObserver ) {
+				new MutationObserver( _.debounce( function() {
+					resize();
+				}, 100 ) )
+				.observe( iframeDoc, {
+					attributes: true,
+					childList: true,
+					subtree: true
+				} );
+			} else {
+				for ( i = 1; i < 6; i++ ) {
+					setTimeout( resize, i * 700 );
+				}
+			}
+
+			if ( callback ) {
+				callback( editor, node );
+			}
+		},
+		setIframeContent: function( html, callback ) {
+			var self = this;
+
+			this.getNodes( function( editor, node ) {
+				self.setSingleIframeContent( html, editor, node, callback );
+			} );
 		},
 		setError: function( message, dashicon ) {
 			this.setContent(
@@ -867,7 +875,7 @@ window.wp = window.wp || {};
 					if ( self.type === 'embed' ) {
 						self.setError( self.original + ' failed to embed.', 'admin-media' );
 					} else {
-						self.setContent( '<p>' + self.original + '</p>', null, true );
+						self.replace( '<p>' + self.original + '</p>' );
 					}
 				} else {
 					self.parsed = content;
@@ -879,58 +887,11 @@ window.wp = window.wp || {};
 				self.setError( self.original + ' failed to embed due to a server error.', 'admin-media' );
 			} );
 		},
-		/* jshint scripturl: true */
 		setHtml: function ( content ) {
-			var MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver,
-				iframe, iframeDoc, i, resize,
-				dom = tinymce.DOM;
-
 			if ( content.indexOf( '<script' ) !== -1 ) {
-				iframe = dom.create( 'iframe', {
-					src: tinymce.Env.ie ? 'javascript:""' : '',
-					frameBorder: '0',
-					allowTransparency: 'true',
-					style: {
-						width: '100%',
-						display: 'block'
-					}
+				this.setIframeContent( {
+					html: content
 				} );
-
-				this.setContent( iframe );
-				iframeDoc = iframe.contentWindow.document;
-
-				iframeDoc.open();
-				iframeDoc.write(
-					'<!DOCTYPE html>' +
-					'<html>' +
-						'<head>' +
-							'<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />' +
-						'</head>' +
-						'<body>' +
-							content +
-						'</body>' +
-					'</html>'
-				);
-				iframeDoc.close();
-
-				resize = function() {
-					$( iframe ).height( $( iframeDoc ).height() );
-				};
-
-				if ( MutationObserver ) {
-					new MutationObserver( _.debounce( function() {
-						resize();
-					}, 100 ) )
-					.observe( iframeDoc.body, {
-						attributes: true,
-						childList: true,
-						subtree: true
-					} );
-				} else {
-					for ( i = 1; i < 6; i++ ) {
-						setTimeout( resize, i * 700 );
-					}
-				}
 			} else {
 				this.setContent( content );
 			}

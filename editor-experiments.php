@@ -32,7 +32,6 @@ if ( ! class_exists( 'Editor_Experiments' ) ) {
 				add_action( 'tiny_mce_before_init', array( $this, 'tiny_mce_before_init' ) );
 				add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
 				add_action( 'wp_enqueue_editor', array( $this, 'wp_enqueue_editor_shortcodes' ) );
-				add_action( 'admin_footer', array( $this, 'admin_footer_shortcodes' ) );
 				add_action( 'wp_ajax_parse-embed', array( $this, 'wp_ajax_parse_embed' ), 1 );
 
 			}
@@ -160,19 +159,6 @@ if ( ! class_exists( 'Editor_Experiments' ) ) {
 				if ( file_exists( plugin_dir_path( $settings['__FILE__'] ) . $shortcode . '/register.js' ) ) {
 					wp_enqueue_script( $shortcode . '-view-registration', plugins_url( $shortcode . '/register.js', $settings['__FILE__'] ), array( 'mce-view' ), false, true );
 				}
-			}
-		}
-
-		function admin_footer_shortcodes() {
-			global $_shortcodes;
-
-			foreach ( $_shortcodes as $shortcode => $settings ) {
-				?>
-				<form id="<?php echo $shortcode; ?>-shortcode-edit-template" class="shortcode-edit-template" style="display: none;">
-					<span class="shortcode-edit-template-tag">EDIT <?php echo strtoupper( $shortcode ); ?></span>
-					<?php include( plugin_dir_path( $settings['__FILE__'] ) . $shortcode . '/edit.php' ); ?>
-				</form>
-				<?php
 			}
 		}
 
