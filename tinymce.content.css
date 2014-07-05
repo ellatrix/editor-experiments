@@ -65,13 +65,6 @@ p.empty:after {
 	height: 1px;
 }
 
-.wpview-wrap .wpview-clipboard {
-	-moz-user-select: text;
-	-webkit-user-select: text;
-	-ms-user-select: text;
-	user-select: text;
-}
-
 .wpview-wrap[data-mce-selected] {
 	background: none;
 	border: none;
@@ -81,20 +74,6 @@ p.empty:after {
 hr[data-mce-selected] {
 	position: relative;
 	outline: none;
-}
-
-.wpview-wrap[data-mce-selected]:before,
-hr[data-mce-selected]:before {
-	content: '';
-	margin: 0;
-	padding: 0;
-	position: absolute;
-	top: -7px;
-	left: -7px;
-	right: -7px;
-	bottom: -7px;
-	border: 2px dashed #333;
-	opacity: 0.5;
 }
 
 .wpview-wrap.wpview-selection-before:before,
@@ -121,6 +100,25 @@ hr[data-mce-selected]:before {
 
 .wpview-wrap.wpview-cursor-hide:before {
 	opacity: 0;
+}
+
+.wpview-wrap[data-mce-selected]:before,
+.wpview-wrap.wpview-selection-before[data-mce-selected]:before,
+.wpview-wrap.wpview-selection-after[data-mce-selected]:before,
+hr[data-mce-selected]:before {
+	content: '';
+	margin: 0;
+	padding: 0;
+	position: absolute;
+	top: -7px;
+	left: -7px;
+	right: -7px;
+	bottom: -7px;
+	background-color: transparent;
+	border: 2px dashed #333;
+	opacity: 0.5;
+	width: auto;
+	z-index: -1;
 }
 
 .wpview-wrap .toolbar {

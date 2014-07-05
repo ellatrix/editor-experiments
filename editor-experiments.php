@@ -117,6 +117,8 @@ if ( ! class_exists( 'Editor_Experiments' ) ) {
 			$init['iframeViewCSS'] = plugins_url( 'iframe.css', __FILE__ );
 			$init['_shortcodes'] = json_encode( $_shortcodes );
 			$init['_scripts'] = json_encode( $wp_scripts->registered );
+			$init['buttonsCSS'] = includes_url( 'css/buttons.css' );
+			$init['formsCSS'] = admin_url( 'css/forms.css' );
 
 			return $init;
 

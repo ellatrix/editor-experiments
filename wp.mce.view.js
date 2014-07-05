@@ -11,6 +11,7 @@ window.wp = window.wp || {};
 ( function( $ ) {
 	var views = {},
 		instances = {},
+		_events = {},
 		media = wp.media,
 		viewOptions = ['encodedText'];
 
@@ -46,21 +47,33 @@ window.wp = window.wp || {};
 		this.initialize.apply( this, arguments );
 	};
 
+	function addEvenShortcut( name ) {
+		wp.mce.View.prototype[ name ] = function() {
+			if ( _.isArray( arguments[0] ) || _.isUndefined( arguments[0] ) ) {
+				this.trigger( name, arguments[0] );
+			} else {
+				this.on( name, arguments[0] );
+			}
+		}
+	}
+
 	_.extend( wp.mce.View.prototype, {
+		_events: {},
 		initialize: function() {},
 		getHtml: function() {},
+		content: function() {},
 		render: function() {
+			console.log( arguments.callee.caller );
 			var self = this,
 				html = this.getHtml.apply( this, _.values( this.options ) ) || '',
-				loadIframe = ( html && html.indexOf( '<script' ) !== -1 ) || ( this.settings && this.settings.scripts ),
-				scripts = [];
+				loadIframe = ( html && html.indexOf( '<script' ) !== -1 ) || ( this.settings && this.settings.scripts ) || this.iframe;
 
 			this.setWrap(
 				'<p class="wpview-selection-before">\u00a0</p>' +
 				'<div class="wpview-body" contenteditable="false">' +
 					'<div class="toolbar">' +
-						( _.isFunction( views[ this.type ].edit ) ? '<div class="dashicons dashicons-edit edit"></div>' : '' ) +
-						'<div class="dashicons dashicons-no-alt remove"></div>' +
+						( this.edit ? '<div class="dashicons dashicons-edit edit"></div>' : '' ) +
+						'<div class="dashicons dashicons-trash remove"></div>' +
 					'</div>' +
 					'<div class="wpview-content wpview-type-' + this.type + '">' +
 						( loadIframe ? '' : html ) +
@@ -72,23 +85,18 @@ window.wp = window.wp || {};
 				'</div>' +
 				'<p class="wpview-selection-after">\u00a0</p>',
 				function( editor, node ) {
+					var scripts = [];
+
 					if ( loadIframe ) {
-						_.each( self.settings.scripts, function( value ) {
-							scripts.push( tinymce.settings._scripts[ value ].src );
-						} );
-
-						if ( self.settings.previewjs ) {
-							scripts.push( self.settings.previewjs );
-						}
-
 						self.setSingleIframeContent( {
 							html: html,
-							styles: [ tinymce.settings.iframeViewCSS ],
-							scripts: scripts,
+							styles: [ tinymce.settings.iframeViewCSS, tinymce.settings.buttonsCSS, tinymce.settings.formsCSS ],
 							window: {
 								attributes: self.shortcode.attrs.named
 							}
-						}, editor, node );
+						}, editor, node, function( editor, node, iframe, editIframe ) {
+							self.content( iframe.contentWindow.document, iframe, editIframe, node );
+						} );
 					}
 
 					$( self ).trigger( 'ready', [ editor, node ] );
@@ -113,15 +121,6 @@ window.wp = window.wp || {};
 			} );
 			text += ']';
 			wp.mce.views.refreshView( this, text, node );
-		},
-		modal: function( node, callback ) {
-			this.setSingleIframeContent( {
-				html: this.editTemplate()
-			}, tinymce.activeEditor, node );
-
-			if ( callback ) {
-				callback();
-			}
 		},
 		unbind: function() {},
 		getNodes: function( callback ) {
@@ -186,11 +185,39 @@ window.wp = window.wp || {};
 		/* jshint scripturl: true */
 		setSingleIframeContent: function( options, editor, node, callback ) {
 			var MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver,
-				iframe, iframeDoc, i, resize, styles = '', scripts = '';
+				editIframe, editIframeDoc, iframe, iframeDoc, i, resize, styles = '', scripts = '';
 
 			node = $( node ).find( '.wpview-content' )[0];
 
 			editor.dom.setHTML( node, '' );
+
+			if ( this.editTemplate ) {
+				editIframe = editor.dom.add( node, 'iframe', {
+					src: 'javascript:""',
+					frameBorder: '0',
+					allowTransparency: 'true',
+					style: {
+						width: '100%',
+						display: 'none'
+					}
+				} );
+
+				editIframeDoc = editIframe.contentWindow.document;
+
+				editIframeDoc.write(
+					'<!DOCTYPE html>' +
+					'<html>' +
+						'<head>' +
+							'<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />' +
+						'</head>' +
+						'<body class="wp-core-ui">' +
+							this.editTemplate() +
+						'</body>' +
+					'</html>'
+				);
+
+				editIframeDoc.close();
+			};
 
 			iframe = editor.dom.add( node, 'iframe', {
 				src: 'javascript:""',
@@ -229,11 +256,12 @@ window.wp = window.wp || {};
 						'<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />' +
 						styles + scripts +
 					'</head>' +
-					'<body>' +
+					'<body class="wp-core-ui">' +
 						( options.html ? options.html : '' ) +
 					'</body>' +
 				'</html>'
 			);
+
 			iframeDoc.close();
 
 			resize = function() {
@@ -256,7 +284,7 @@ window.wp = window.wp || {};
 			}
 
 			if ( callback ) {
-				callback( editor, node );
+				callback( editor, node, iframe, editIframe );
 			}
 		},
 		setIframeContent: function( html, callback ) {
@@ -286,233 +314,250 @@ window.wp = window.wp || {};
 	 * At its core, it serves as a series of converters, transforming text to a
 	 * custom UI, and back again.
 	 */
-	wp.mce.views = {
+	wp.mce.views = function() {
+		return instances[ _.isString( arguments[0] ) ? arguments[0] : $( arguments[0] ).attr( 'data-wpview-text' ) ];
+	}
 
-		/**
-		 * wp.mce.views.register( type, view )
-		 *
-		 * Registers a new TinyMCE view.
-		 *
-		 * @param type
-		 * @param constructor
-		 */
-		register: function( type, constructor ) {
-			var defaultConstructor = {
-					type: type,
-					toView: function( content ) {
-						var match = wp.shortcode.next( type, content );
+	/**
+	 * wp.mce.views.register( type, view )
+	 *
+	 * Registers a new TinyMCE view.
+	 *
+	 * @param type
+	 * @param constructor
+	 */
+	wp.mce.views.register = function( type, constructor ) {
+		var defaultConstructor = {
+				type: type,
+				toView: function( content ) {
+					var match = wp.shortcode.next( type, content );
 
-						if ( ! match ) {
-							return;
-						}
-
-						return {
-							index: match.index,
-							content: match.content,
-							options: {
-								attributes: match.shortcode.attrs.named,
-								content: match.shortcode.content,
-								tag: match.shortcode.tag,
-								shortcode: match.shortcode
-							}
-						};
-					}
-				};
-
-			if ( constructor && ! constructor.View ) {
-				constructor.View = constructor;
-			}
-
-			constructor = constructor ? _.defaults( constructor, defaultConstructor ) : defaultConstructor;
-
-			constructor.View = wp.mce.View.extend( constructor.View );
-
-			views[ type ] = constructor;
-		},
-
-		/**
-		 * wp.mce.views.get( id )
-		 *
-		 * Returns a TinyMCE view constructor.
-		 */
-		get: function( type ) {
-			return views[ type ];
-		},
-
-		/**
-		 * wp.mce.views.unregister( type )
-		 *
-		 * Unregisters a TinyMCE view.
-		 */
-		unregister: function( type ) {
-			delete views[ type ];
-		},
-
-		/**
-		 * wp.mce.views.unbind( editor )
-		 *
-		 * The editor DOM is being rebuilt, run cleanup.
-		 */
-		unbind: function() {
-			_.each( instances, function( instance ) {
-				instance.unbind();
-			} );
-		},
-
-		/**
-		 * toViews( content )
-		 * Scans a `content` string for each view's pattern, replacing any
-		 * matches with wrapper elements, and creates a new instance for
-		 * every match, which triggers the related data to be fetched.
-		 */
-		toViews: function( content ) {
-			var pieces = [ { content: content } ],
-				current;
-
-			_.each( views, function( view, viewType ) {
-				current = pieces.slice();
-				pieces  = [];
-
-				_.each( current, function( piece ) {
-					var remaining = piece.content,
-						result;
-
-					// Ignore processed pieces, but retain their location.
-					if ( piece.processed ) {
-						pieces.push( piece );
+					if ( ! match ) {
 						return;
 					}
 
-					// Iterate through the string progressively matching views
-					// and slicing the string as we go.
-					while ( remaining && ( result = view.toView( remaining ) ) ) {
-						// Any text before the match becomes an unprocessed piece.
-						if ( result.index ) {
-							pieces.push({ content: remaining.substring( 0, result.index ) });
+					return {
+						index: match.index,
+						content: match.content,
+						options: {
+							attributes: match.shortcode.attrs.named,
+							content: match.shortcode.content,
+							tag: match.shortcode.tag,
+							shortcode: match.shortcode
 						}
+					};
+				}
+			};
 
-						// Add the processed piece for the match.
-						pieces.push( {
-							content: wp.mce.views.toView( viewType, result.content, result.options ),
-							processed: true
-						} );
-
-						// Update the remaining content.
-						remaining = remaining.slice( result.index + result.content.length );
-					}
-
-					// There are no additional matches. If any content remains,
-					// add it as an unprocessed piece.
-					if ( remaining ) {
-						pieces.push({ content: remaining });
-					}
-				} );
-			} );
-
-			return _.pluck( pieces, 'content' ).join( '' );
-		},
-
-		/**
-		 * Create a placeholder for a particular view type
-		 *
-		 * @param viewType
-		 * @param text
-		 * @param options
-		 *
-		 */
-		toView: function( viewType, text, options ) {
-			var view = wp.mce.views.get( viewType ),
-				encodedText = window.encodeURIComponent( text ),
-				instance, viewOptions;
-
-			if ( ! view ) {
-				return text;
-			}
-
-			if ( ! wp.mce.views.getInstance( encodedText ) ) {
-				viewOptions = options;
-				viewOptions.encodedText = encodedText;
-				viewOptions.type = viewType;
-				instance = new view.View( viewOptions );
-				instances[ encodedText ] = instance;
-			}
-
-			return wp.html.string( {
-				tag: 'div',
-				attrs: {
-					'class': 'wpview-wrap',
-					'data-wpview-text': encodedText,
-					'data-wpview-type': viewType
-				},
-				content: '\u00a0'
-			} );
-		},
-
-		/**
-		 * Refresh views after an update is made
-		 *
-		 * @param view {object} being refreshed
-		 * @param text {string} textual representation of the view
-		 */
-		refreshView: function( instance, text, node ) {
-			var encodedText, newInstance, viewOptions, result;
-
-			encodedText = window.encodeURIComponent( text );
-
-			// Update the node's text.
-			$( node ).attr( 'data-wpview-text', encodedText );
-
-			if ( ! this.getInstance( encodedText ) ) {
-				// Parse the text.
-				result = views[ instance.type ].toView( text );
-				viewOptions = result.options;
-				viewOptions.encodedText = encodedText;
-				viewOptions.type = instance.type;
-
-				// Create a new instance.
-				newInstance = new views[ instance.type ].View( viewOptions );
-				instances[ encodedText ] = newInstance;
-			}
-
-			this.render();
-		},
-
-		getInstance: function( encodedText ) {
-			return instances[ encodedText ];
-		},
-
-		/**
-		 * render( scope )
-		 *
-		 * Renders any view instances inside a DOM node `scope`.
-		 *
-		 * View instances are detected by the presence of wrapper elements.
-		 * To generate wrapper elements, pass your content through
-		 * `wp.mce.view.toViews( content )`.
-		 */
-		render: function() {
-			_.each( instances, function( instance ) {
-				instance.render();
-			} );
-		},
-
-		edit: function( node ) {
-			var encodedText = $( node ).attr( 'data-wpview-text' ),
-				text = window.decodeURIComponent( encodedText ),
-				instance = this.getInstance( encodedText );
-
-			if ( instance && _.isFunction( instance.edit ) ) {
-				instance.edit( text, node );
-			}
+		if ( constructor && ! constructor.View ) {
+			constructor.View = constructor;
 		}
+
+		constructor = constructor ? _.defaults( constructor, defaultConstructor ) : defaultConstructor;
+
+		constructor.View = wp.mce.View.extend( constructor.View );
+
+		views[ type ] = constructor;
+	};
+
+	/**
+	 * wp.mce.views.get( id )
+	 *
+	 * Returns a TinyMCE view constructor.
+	 */
+	wp.mce.views.get = function( type ) {
+		return views[ type ];
+	};
+
+	/**
+	 * wp.mce.views.unregister( type )
+	 *
+	 * Unregisters a TinyMCE view.
+	 */
+	wp.mce.views.unregister = function( type ) {
+		delete views[ type ];
+	};
+
+	/**
+	 * wp.mce.views.unbind( editor )
+	 *
+	 * The editor DOM is being rebuilt, run cleanup.
+	 */
+	wp.mce.views.unbind = function() {
+		_.each( instances, function( instance ) {
+			instance.unbind();
+		} );
+	};
+
+	/**
+	 * toViews( content )
+	 * Scans a `content` string for each view's pattern, replacing any
+	 * matches with wrapper elements, and creates a new instance for
+	 * every match, which triggers the related data to be fetched.
+	 */
+	wp.mce.views.toViews = function( content ) {
+		var pieces = [ { content: content } ],
+			current;
+
+		_.each( views, function( view, viewType ) {
+			current = pieces.slice();
+			pieces  = [];
+
+			_.each( current, function( piece ) {
+				var remaining = piece.content,
+					result;
+
+				// Ignore processed pieces, but retain their location.
+				if ( piece.processed ) {
+					pieces.push( piece );
+					return;
+				}
+
+				// Iterate through the string progressively matching views
+				// and slicing the string as we go.
+				while ( remaining && ( result = view.toView( remaining ) ) ) {
+					// Any text before the match becomes an unprocessed piece.
+					if ( result.index ) {
+						pieces.push({ content: remaining.substring( 0, result.index ) });
+					}
+
+					// Add the processed piece for the match.
+					pieces.push( {
+						content: wp.mce.views.toView( viewType, result.content, result.options ),
+						processed: true
+					} );
+
+					// Update the remaining content.
+					remaining = remaining.slice( result.index + result.content.length );
+				}
+
+				// There are no additional matches. If any content remains,
+				// add it as an unprocessed piece.
+				if ( remaining ) {
+					pieces.push({ content: remaining });
+				}
+			} );
+		} );
+
+		return _.pluck( pieces, 'content' ).join( '' );
+	};
+
+	/**
+	 * Create a placeholder for a particular view type
+	 *
+	 * @param viewType
+	 * @param text
+	 * @param options
+	 *
+	 */
+	wp.mce.views.toView = function( viewType, text, options ) {
+		var view = wp.mce.views.get( viewType ),
+			encodedText = window.encodeURIComponent( text ),
+			instance, viewOptions;
+
+		if ( ! view ) {
+			return text;
+		}
+
+		if ( ! this.getInstance( encodedText ) ) {
+			viewOptions = options;
+			viewOptions.encodedText = encodedText;
+			viewOptions.type = viewType;
+			instance = new view.View( viewOptions );
+			instances[ encodedText ] = instance;
+		}
+
+		return wp.html.string( {
+			tag: 'div',
+			attrs: {
+				'class': 'wpview-wrap',
+				'data-wpview-text': encodedText,
+				'data-wpview-type': viewType
+			},
+			content: '\u00a0'
+		} );
+	};
+
+	/**
+	 * Refresh views after an update is made
+	 *
+	 * @param view {object} being refreshed
+	 * @param text {string} textual representation of the view
+	 */
+	wp.mce.views.refreshView = function( instance, text, node ) {
+		var encodedText, newInstance, viewOptions, result;
+
+		encodedText = window.encodeURIComponent( text );
+
+		// Update the node's text.
+		$( node ).attr( 'data-wpview-text', encodedText );
+
+		if ( ! this.getInstance( encodedText ) ) {
+			// Parse the text.
+			result = views[ instance.type ].toView( text );
+			viewOptions = result.options;
+			viewOptions.encodedText = encodedText;
+			viewOptions.type = instance.type;
+
+			// Create a new instance.
+			newInstance = new views[ instance.type ].View( viewOptions );
+			instances[ encodedText ] = newInstance;
+		}
+
+		// this.render();
+	};
+
+	wp.mce.views.getInstance = function( encodedText ) {
+		return instances[ encodedText ];
+	};
+
+	/**
+	 * render( scope )
+	 *
+	 * Renders any view instances inside a DOM node `scope`.
+	 *
+	 * View instances are detected by the presence of wrapper elements.
+	 * To generate wrapper elements, pass your content through
+	 * `wp.mce.view.toViews( content )`.
+	 */
+	wp.mce.views.render = function() {
+		// _.each( instances, function( instance ) {
+		// 	instance.render();
+		// } );
+	};
+
+	wp.mce.views.edit = function( node ) {
+	};
+
+	wp.mce.views.select = function( node ) {
+	};
+
+	wp.mce.views.deselect = function() {
 	};
 
 	wp.mce.views.register( 'gallery', {
+		edit: true,
 		template: media.template( 'editor-gallery' ),
 		postID: $( '#post_ID' ).val(),
 
 		initialize: function() {
+			var self = this;
+
 			this.fetch();
+
+			$( this ).on( 'ready', function( event, editor, node ) {
+				$( node ).on( 'edit', function( event, text ) {
+					var gallery = wp.media.gallery,
+						frame;
+
+					frame = gallery.edit( text );
+
+					frame.state( 'gallery-edit' ).on( 'update', function( selection ) {
+						wp.mce.views.refreshView( self, gallery.shortcode( selection ).string(), node );
+						frame.detach();
+					} );
+				} );
+			} );
 		},
 
 		fetch: function() {
@@ -548,19 +593,6 @@ window.wp = window.wp || {};
 			};
 
 			return this.template( options );
-		},
-
-		edit: function( text, node ) {
-			var gallery = wp.media.gallery,
-				self = this,
-				frame;
-
-			frame = gallery.edit( text );
-
-			frame.state( 'gallery-edit' ).on( 'update', function( selection ) {
-				wp.mce.views.refreshView( self, gallery.shortcode( selection ).string(), node );
-				frame.detach();
-			} );
 		}
 	} );
 
