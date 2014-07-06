@@ -31,7 +31,7 @@ tinymce.PluginManager.add( 'insert', function( editor ) {
 
 		removeElement();
 
-		if ( ! selection || editor.isView( selection ) ) {
+		if ( ! selection || editor.wp.getView( selection ) ) {
 			return;
 		}
 

@@ -1,6 +1,7 @@
 /* global tinymce, switchEditors */
 
 tinymce.PluginManager.add( 'general', function( editor ) {
+	editor.wp = editor.wp || {};
 
 	editor.addButton( 'switchmode', {
 		classes: 'container btn-group switchmode',
@@ -75,4 +76,9 @@ tinymce.PluginManager.add( 'general', function( editor ) {
 	editor.setUIColor( '.wpview-type-more span:before, .wpview-type-more span:after', 'border-bottom-color' );
 	editor.setUIColor( '.wpview-wrap.wpview-selection-before:before,.wpview-wrap.wpview-selection-after:before', 'background-color' );
 
+	editor.wp.getView = function( node ) {
+		return editor.dom.getParent( node, function( node ) {
+			return editor.dom.hasClass( node, 'wpview-wrap' );
+		});
+	};
 } );

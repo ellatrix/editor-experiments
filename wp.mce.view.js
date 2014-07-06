@@ -67,9 +67,6 @@ window.wp = window.wp || {};
 						( loadIframe ? '' : html ) +
 					'</div>' +
 					( this.overlay ? '<div class="wpview-overlay"></div>' : '' ) +
-					// The <ins> is used to mark the end of the wrapper div (has to be the last child node).
-					// Needed when comparing the content as string for preventing extra undo levels.
-					'<ins data-wpview-end="1"></ins>' +
 				'</div>' +
 				'<p class="wpview-selection-after">\u00a0</p>',
 				function( editor, node ) {
@@ -449,7 +446,7 @@ window.wp = window.wp || {};
 		encodedText = window.encodeURIComponent( text );
 
 		// Update the node's text.
-		$( node ).attr( 'data-wpview-text', encodedText );
+		$( node ).attr( 'data-wpview-text', encodedText ).unbind( 'edit' );
 
 		if ( ! this.getInstance( encodedText ) ) {
 			// Parse the text.
@@ -485,8 +482,7 @@ window.wp = window.wp || {};
 		} );
 	};
 
-	wp.mce.views.deselect = function() {
-	};
+	wp.mce.views.edit = function() {};
 
 	wp.mce.views.register( 'gallery', {
 		edit: true,
@@ -524,11 +520,11 @@ window.wp = window.wp || {};
 
 					self.setContent( self.template( options ) );
 
-					$( node ).on( 'edit', function( event, text ) {
+					$( node ).on( 'edit', function() {
 						var gallery = wp.media.gallery,
 							frame;
 
-						frame = gallery.edit( text );
+						frame = gallery.edit( window.decodeURIComponent( self.encodedText ) );
 
 						frame.state( 'gallery-edit' ).on( 'update', function( selection ) {
 							wp.mce.views.refreshView( self, gallery.shortcode( selection ).string(), node );
@@ -560,13 +556,13 @@ window.wp = window.wp || {};
 			$( this ).on( 'ready', function( event, editor, node ) {
 				editor.on( 'hide', this.pausePlayers );
 
-				$( node ).on( 'edit', function( event, text ) {
+				$( node ).on( 'edit', function() {
 					var media = wp.media[ self.type ],
 						frame, callback;
 
 					$( document ).trigger( 'media:edit' );
 
-					frame = media.edit( text );
+					frame = media.edit( window.decodeURIComponent( self.encodedText ) );
 
 					frame.on( 'close', function() {
 						frame.detach();
@@ -796,7 +792,6 @@ window.wp = window.wp || {};
 			this.unsetPlayers();
 		}
 	} ) );
-
 
 	/**
 	 * TinyMCE handler for the embed shortcode

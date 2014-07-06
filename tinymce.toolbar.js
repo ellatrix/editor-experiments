@@ -12,7 +12,7 @@ tinymce.PluginManager.add( 'toolbar', function( editor ) {
 				event.element.nodeName !== 'IMG' &&
 				event.element.nodeName !== 'HR' &&
 				event.element.id !== 'wp-title' &&
-				! editor.isView( event.element ) ) {
+				! editor.wp.getView( event.element ) ) {
 			if ( toolbar._visible ) {
 				toolbar.setPos();
 			} else {
