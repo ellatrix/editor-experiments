@@ -171,6 +171,11 @@ i.mce-i-editor-code:before {
 	overflow-y: scroll;
 }
 
+#wp-block-edit {
+	position: absolute;
+	z-index: 20;
+}
+
 body.wp-block-modal-open {
 	overflow: hidden;
 }

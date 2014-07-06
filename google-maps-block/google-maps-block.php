@@ -17,9 +17,28 @@ if ( ! class_exists( 'Editor_Experiments' ) ) {
 }
 
 add_action( 'wp_enqueue_scripts', 'google_map_block_enqueue_scripts' );
+add_action( 'print_media_templates', 'google_map_block_print_media_templates' );
 
 function google_map_block_enqueue_scripts() {
 	wp_enqueue_script( 'google-maps-api', 'https://maps.googleapis.com/maps/api/js?sensor=false' );
+}
+
+function google_map_block_print_media_templates() {
+	?>
+	<script type="text/html" id="tmpl-google-maps-edit">
+		<form>
+			<input type="hidden" name="latitude" value="">
+			<input type="hidden" name="longitude" value="">
+			<input type="hidden" name="zoom" value="">
+			<input type="hidden" name="height" value="">
+			<input type="hidden" name="type" value="">
+			<div style="padding: 5px 5px 10px;">
+				<input type="text" name="address" value="" placeholder="Search..." style="line-height: 1.5;margin-right: 5px;">
+				<label for="map-shortcode-marker"><input type="checkbox" id="map-shortcode-marker" name="marker" value="true"> Show marker</label>
+			</div>
+		</form>
+	</script>
+	<?php
 }
 
 add_action( 'admin_enqueue_scripts', 'google_map_block_admin_enqueue_scripts' );

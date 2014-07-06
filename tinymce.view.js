@@ -127,7 +127,7 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 
 		editor.nodeChanged();
 
-		views.select( viewNode );
+		jQuery( viewNode ).trigger( 'select' );
 	}
 
 	/**

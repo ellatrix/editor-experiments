@@ -11,7 +11,6 @@ window.wp = window.wp || {};
 ( function( $ ) {
 	var views = {},
 		instances = {},
-		_events = {},
 		media = wp.media,
 		viewOptions = ['encodedText'];
 
@@ -47,23 +46,11 @@ window.wp = window.wp || {};
 		this.initialize.apply( this, arguments );
 	};
 
-	function addEvenShortcut( name ) {
-		wp.mce.View.prototype[ name ] = function() {
-			if ( _.isArray( arguments[0] ) || _.isUndefined( arguments[0] ) ) {
-				this.trigger( name, arguments[0] );
-			} else {
-				this.on( name, arguments[0] );
-			}
-		}
-	}
-
 	_.extend( wp.mce.View.prototype, {
-		_events: {},
 		initialize: function() {},
 		getHtml: function() {},
 		content: function() {},
 		render: function() {
-			console.log( arguments.callee.caller );
 			var self = this,
 				html = this.getHtml.apply( this, _.values( this.options ) ) || '',
 				loadIframe = ( html && html.indexOf( '<script' ) !== -1 ) || ( this.settings && this.settings.scripts ) || this.iframe;
@@ -75,6 +62,7 @@ window.wp = window.wp || {};
 						( this.edit ? '<div class="dashicons dashicons-edit edit"></div>' : '' ) +
 						'<div class="dashicons dashicons-trash remove"></div>' +
 					'</div>' +
+					'<div class="wpview-edit-placeholder" style="height:200px;display:none;"></div>' +
 					'<div class="wpview-content wpview-type-' + this.type + '">' +
 						( loadIframe ? '' : html ) +
 					'</div>' +
@@ -85,8 +73,6 @@ window.wp = window.wp || {};
 				'</div>' +
 				'<p class="wpview-selection-after">\u00a0</p>',
 				function( editor, node ) {
-					var scripts = [];
-
 					if ( loadIframe ) {
 						self.setSingleIframeContent( {
 							html: html,
@@ -94,8 +80,8 @@ window.wp = window.wp || {};
 							window: {
 								attributes: self.shortcode.attrs.named
 							}
-						}, editor, node, function( editor, node, iframe, editIframe ) {
-							self.content( iframe.contentWindow.document, iframe, editIframe, node );
+						}, editor, node, function( editor, node, iframe ) {
+							self.content( iframe.contentWindow.document, iframe, $( node ).parents( '.wpview-wrap' )[0], editor );
 						} );
 					}
 
@@ -103,7 +89,7 @@ window.wp = window.wp || {};
 				}
 			);
 		},
-		refresh: function( attributes, node ) {
+		formToShortcode: function( attributes ) {
 			var text, defs, validKeys;
 			if ( this.settings.attributes ) {
 				defs = _.clone( this.settings.attributes );
@@ -120,7 +106,8 @@ window.wp = window.wp || {};
 				text += ' ' + key + '="' + value + '"';
 			} );
 			text += ']';
-			wp.mce.views.refreshView( this, text, node );
+
+			return text;
 		},
 		unbind: function() {},
 		getNodes: function( callback ) {
@@ -185,39 +172,11 @@ window.wp = window.wp || {};
 		/* jshint scripturl: true */
 		setSingleIframeContent: function( options, editor, node, callback ) {
 			var MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver,
-				editIframe, editIframeDoc, iframe, iframeDoc, i, resize, styles = '', scripts = '';
+				iframe, iframeDoc, i, resize, styles = '', scripts = '';
 
 			node = $( node ).find( '.wpview-content' )[0];
 
 			editor.dom.setHTML( node, '' );
-
-			if ( this.editTemplate ) {
-				editIframe = editor.dom.add( node, 'iframe', {
-					src: 'javascript:""',
-					frameBorder: '0',
-					allowTransparency: 'true',
-					style: {
-						width: '100%',
-						display: 'none'
-					}
-				} );
-
-				editIframeDoc = editIframe.contentWindow.document;
-
-				editIframeDoc.write(
-					'<!DOCTYPE html>' +
-					'<html>' +
-						'<head>' +
-							'<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />' +
-						'</head>' +
-						'<body class="wp-core-ui">' +
-							this.editTemplate() +
-						'</body>' +
-					'</html>'
-				);
-
-				editIframeDoc.close();
-			};
 
 			iframe = editor.dom.add( node, 'iframe', {
 				src: 'javascript:""',
@@ -284,7 +243,7 @@ window.wp = window.wp || {};
 			}
 
 			if ( callback ) {
-				callback( editor, node, iframe, editIframe );
+				callback( editor, node, iframe );
 			}
 		},
 		setIframeContent: function( html, callback ) {
@@ -316,7 +275,7 @@ window.wp = window.wp || {};
 	 */
 	wp.mce.views = function() {
 		return instances[ _.isString( arguments[0] ) ? arguments[0] : $( arguments[0] ).attr( 'data-wpview-text' ) ];
-	}
+	};
 
 	/**
 	 * wp.mce.views.register( type, view )
@@ -484,7 +443,7 @@ window.wp = window.wp || {};
 	 * @param view {object} being refreshed
 	 * @param text {string} textual representation of the view
 	 */
-	wp.mce.views.refreshView = function( instance, text, node ) {
+	wp.mce.views.refreshView = function( instance, text, node, norender ) {
 		var encodedText, newInstance, viewOptions, result;
 
 		encodedText = window.encodeURIComponent( text );
@@ -504,7 +463,7 @@ window.wp = window.wp || {};
 			instances[ encodedText ] = newInstance;
 		}
 
-		// this.render();
+		norender || this.render();
 	};
 
 	wp.mce.views.getInstance = function( encodedText ) {
@@ -521,15 +480,9 @@ window.wp = window.wp || {};
 	 * `wp.mce.view.toViews( content )`.
 	 */
 	wp.mce.views.render = function() {
-		// _.each( instances, function( instance ) {
-		// 	instance.render();
-		// } );
-	};
-
-	wp.mce.views.edit = function( node ) {
-	};
-
-	wp.mce.views.select = function( node ) {
+		_.each( instances, function( instance ) {
+			instance.render();
+		} );
 	};
 
 	wp.mce.views.deselect = function() {
@@ -543,56 +496,47 @@ window.wp = window.wp || {};
 		initialize: function() {
 			var self = this;
 
-			this.fetch();
-
 			$( this ).on( 'ready', function( event, editor, node ) {
-				$( node ).on( 'edit', function( event, text ) {
-					var gallery = wp.media.gallery,
-						frame;
+				self.attachments = wp.media.gallery.attachments( self.shortcode, self.postID );
+				self.attachments.more().done( function() {
+					var attachments = false,
+						attributes = self.shortcode.attrs.named,
+						options;
 
-					frame = gallery.edit( text );
+					if ( self.attachments.length ) {
+						attachments = self.attachments.toJSON();
 
-					frame.state( 'gallery-edit' ).on( 'update', function( selection ) {
-						wp.mce.views.refreshView( self, gallery.shortcode( selection ).string(), node );
-						frame.detach();
+						_.each( attachments, function( attachment ) {
+							if ( attachment.sizes ) {
+								if ( attachment.sizes.thumbnail ) {
+									attachment.thumbnail = attachment.sizes.thumbnail;
+								} else if ( attachment.sizes.full ) {
+									attachment.thumbnail = attachment.sizes.full;
+								}
+							}
+						} );
+					}
+
+					options = {
+						attachments: attachments,
+						columns: attributes.columns ? parseInt( attributes.columns, 10 ) : 3
+					};
+
+					self.setContent( self.template( options ) );
+
+					$( node ).on( 'edit', function( event, text ) {
+						var gallery = wp.media.gallery,
+							frame;
+
+						frame = gallery.edit( text );
+
+						frame.state( 'gallery-edit' ).on( 'update', function( selection ) {
+							wp.mce.views.refreshView( self, gallery.shortcode( selection ).string(), node );
+							frame.detach();
+						} );
 					} );
 				} );
 			} );
-		},
-
-		fetch: function() {
-			this.attachments = wp.media.gallery.attachments( this.shortcode, this.postID );
-			this.dfd = this.attachments.more().done( _.bind( this.render, this ) );
-		},
-
-		getHtml: function( attributes ) {
-			var attachments = false,
-				options;
-			// Don't render errors while still fetching attachments
-			if ( this.dfd && 'pending' === this.dfd.state() && ! this.attachments.length ) {
-				return;
-			}
-
-			if ( this.attachments.length ) {
-				attachments = this.attachments.toJSON();
-
-				_.each( attachments, function( attachment ) {
-					if ( attachment.sizes ) {
-						if ( attachment.sizes.thumbnail ) {
-							attachment.thumbnail = attachment.sizes.thumbnail;
-						} else if ( attachment.sizes.full ) {
-							attachment.thumbnail = attachment.sizes.full;
-						}
-					}
-				} );
-			}
-
-			options = {
-				attachments: attachments,
-				columns: attributes.columns ? parseInt( attributes.columns, 10 ) : 3
-			};
-
-			return this.template( options );
 		}
 	} );
 
@@ -604,14 +548,45 @@ window.wp = window.wp || {};
 	wp.mce.av = _.extend( wp.media.mixin, {
 		loaded: false,
 		overlay: true,
+		edit: true,
 
 		initialize: function( options ) {
+			var self = this;
+
 			this.players = [];
 			this.shortcode = options.shortcode;
 			_.bindAll( this, 'setPlayer', 'pausePlayers' );
 			$( this ).on( 'ready', this.setPlayer );
-			$( this ).on( 'ready', function( event, editor ) {
+			$( this ).on( 'ready', function( event, editor, node ) {
 				editor.on( 'hide', this.pausePlayers );
+
+				$( node ).on( 'edit', function( event, text ) {
+					var media = wp.media[ self.type ],
+						frame, callback;
+
+					$( document ).trigger( 'media:edit' );
+
+					frame = media.edit( text );
+
+					frame.on( 'close', function() {
+						frame.detach();
+					} );
+
+					callback = function( selection ) {
+						wp.mce.views.refreshView( self, wp.media[ self.type ].shortcode( selection ).string(), node );
+						frame.detach();
+					};
+
+					if ( _.isArray( self.state ) ) {
+						_.each( self.state, function ( state ) {
+							frame.state( state ).on( 'update', callback );
+						} );
+					} else {
+						frame.state( self.state ).on( 'update', callback );
+					}
+
+					frame.open();
+				} );
 			} );
 			$( document ).on( 'media:edit', this.pausePlayers );
 		},
@@ -667,35 +642,6 @@ window.wp = window.wp || {};
 
 		unbind: function() {
 			this.unsetPlayers();
-		},
-
-		edit: function( text, node ) {
-			var media = wp.media[ this.type ],
-				self = this,
-				frame, callback;
-
-			$( document ).trigger( 'media:edit' );
-
-			frame = media.edit( text );
-
-			frame.on( 'close', function() {
-				frame.detach();
-			} );
-
-			callback = function( selection ) {
-				wp.mce.views.refreshView( self, wp.media[ self.type ].shortcode( selection ).string(), node );
-				frame.detach();
-			};
-
-			if ( _.isArray( self.state ) ) {
-				_.each( self.state, function ( state ) {
-					frame.state( state ).on( 'update', callback );
-				} );
-			} else {
-				frame.state( self.state ).on( 'update', callback );
-			}
-
-			frame.open();
 		}
 	} );
 
