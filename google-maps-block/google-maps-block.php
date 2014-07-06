@@ -77,6 +77,5 @@ register_shortcode( 'map', array(
 			'defaults' => 'roadmap'
 		)
 	),
-	'scripts' => array( 'google-maps-api' ),
-	'block_preview_interaction' => true
+	'scripts' => array( 'google-maps-api' )
 ) );

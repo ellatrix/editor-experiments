@@ -352,9 +352,33 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 			selection = editor.selection,
 			node = selection.getNode(),
 			view = getView( node ),
-			cursorBefore, cursorAfter;
+			cursorBefore, cursorAfter,
+			range, clonedRange, tempRange;
 
 		lastKeyDownNode = node;
+
+		// Make sure we don't delete part of a view.
+		// If the range ends or starts with the view, we'll need to trim it.
+		if ( ! selection.isCollapsed() ) {
+			range = selection.getRng();
+
+			if ( view = getView( range.endContainer ) ) {
+				clonedRange = range.cloneRange();
+				selection.select( view.previousSibling, true );
+				selection.collapse();
+				tempRange = selection.getRng();
+				clonedRange.setEnd( tempRange.endContainer, tempRange.endOffset );
+				selection.setRng( clonedRange );
+
+				return;
+			} else if ( view = getView( range.startContainer ) ) {
+				clonedRange = range.cloneRange();
+				clonedRange.setStart( view.nextSibling, 0 );
+				selection.setRng( clonedRange );
+
+				return;
+			}
+		}
 
 		if ( ! view ) {
 			return;
@@ -468,11 +492,34 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 			return;
 		}
 
-		if ( keyCode === VK.LEFT || keyCode === VK.UP ) {
+		if ( keyCode === VK.LEFT ) {
 			setViewCursor( true, view );
 			deselect();
-		} else if ( keyCode === VK.RIGHT || keyCode === VK.DOWN ) {
+		} else if ( keyCode === VK.UP ) {
+			if ( view.previousSibling ) {
+				if ( getView( view.previousSibling ) ) {
+					setViewCursor( true, view.previousSibling );
+				} else {
+					selection.select( view.previousSibling, true );
+					selection.collapse();
+				}
+			} else {
+				handleEnter( view, true );
+			}
+			deselect();
+		} else if ( keyCode === VK.RIGHT ) {
 			setViewCursor( false, view );
+			deselect();
+		} else if ( keyCode === VK.DOWN ) {
+			if ( view.nextSibling ) {
+				if ( getView( view.nextSibling ) ) {
+					setViewCursor( false, view.nextSibling );
+				} else {
+					selection.setCursorLocation( view.nextSibling, 0 );
+				}
+			} else {
+				handleEnter( view );
+			}
 			deselect();
 		} else if ( keyCode === VK.ENTER ) {
 			handleEnter( view );

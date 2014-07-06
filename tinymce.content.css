@@ -48,23 +48,6 @@ p.empty:after {
 	width: 100%;
 }
 
-.wpview-wrap > p {
-	-moz-user-select: text;
-	-webkit-user-select: text;
-	-ms-user-select: text;
-	user-select: text;
-	z-index: -1;
-	clip: rect( 1px 1px 1px 1px );
-	clip: rect( 1px, 1px, 1px, 1px );
-	overflow: hidden;
-	outline: 0;
-	padding: 0;
-	border: 0;
-	margin: 0;
-	width: 1px;
-	height: 1px;
-}
-
 .wpview-wrap[data-mce-selected] {
 	background: none;
 	border: none;
@@ -74,32 +57,6 @@ p.empty:after {
 hr[data-mce-selected] {
 	position: relative;
 	outline: none;
-}
-
-.wpview-wrap.wpview-selection-before:before,
-.wpview-wrap.wpview-selection-after:before {
-	content: '';
-	margin: 0;
-	padding: 0;
-	position: absolute;
-	top: -2px;
-	left: -3px;
-	bottom: -2px;
-	width: 1px;
-	background-color: black;
-	-webkit-transition: opacity 0.15s ease-out;
-	-moz-transition: opacity 0.15s ease-out;
-	transition: opacity 0.15s ease-out;
-	opacity: 1;
-}
-
-.wpview-wrap.wpview-selection-after:before {
-	left: auto;
-	right: -3px;
-}
-
-.wpview-wrap.wpview-cursor-hide:before {
-	opacity: 0;
 }
 
 .wpview-wrap[data-mce-selected]:before,
