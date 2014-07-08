@@ -152,8 +152,10 @@
 						return object;
 					};
 
-					views.refreshView( self, self.formToShortcode( $( $template ).serializeObject() ), view, true );
-					editor.undoManager.add();
+					if ( $template && $template.length ) {
+						views.refreshView( self, self.formToShortcode( $( $template ).serializeObject() ), view, true );
+						editor.undoManager.add();
+					}
 
 					$( modal ).remove();
 					$view.find( '.wpview-edit-placeholder' ).hide();

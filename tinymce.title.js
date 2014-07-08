@@ -26,8 +26,9 @@ tinymce.PluginManager.add( 'title', function( editor ) {
 	}
 
 	editor.on( 'keydown', function( event ) {
-		var selection = editor.selection,
-			title, range, node;
+		var dom = editor.dom,
+			selection = editor.selection,
+			title, range, node, padNode;
 
 		if ( event.keyCode === VK.BACKSPACE ) {
 			range = selection.getRng();
@@ -35,14 +36,30 @@ tinymce.PluginManager.add( 'title', function( editor ) {
 			title = dummyTitle();
 			if ( title &&
 					( node.previousSibling === title ||
-					node === title ) &&
-				selection.isCollapsed() && range.startOffset === 0 && range.endOffset === 0 ) {
+						node === title ) &&
+					selection.isCollapsed() &&
+					range.startOffset === 0 &&
+					range.endOffset === 0 &&
+					! dom.isEmpty( node ) ) {
+				selection.select( title, true );
+				selection.collapse();
 				event.preventDefault();
 			}
 		} else if ( event.keyCode === VK.ENTER ) {
-			node = selection.getNode();
-			if ( node === dummyTitle() ) {
-				selection.setCursorLocation( node.nextSibling );
+			title = dummyTitle();
+
+			if ( title = selection.getNode() ) {
+				padNode = dom.create( 'p' );
+
+				if ( ! ( Env.ie && Env.ie < 11 ) ) {
+					padNode.innerHTML = '<br data-mce-bogus="1">';
+				}
+
+				dom.insertAfter( padNode, title );
+
+				editor.getBody().focus();
+				editor.selection.setCursorLocation( padNode, 0 );
+				editor.nodeChanged();
 				event.preventDefault();
 			}
 		}
