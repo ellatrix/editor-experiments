@@ -8,12 +8,20 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 		VK = tinymce.util.VK,
 		TreeWalker = tinymce.dom.TreeWalker,
 		toRemove = false,
-		cursorInterval, lastKeyDownNode, setViewCursorTries;
+		firstFocus = true,
+		cursorInterval, lastKeyDownNode, setViewCursorTries, focus;
 
 	function getView( node ) {
-		return editor.dom.getParent( node, function( node ) {
-			return editor.dom.hasClass( node, 'wpview-wrap' );
-		});
+		// Doing this directly is about 40% faster
+		while ( node && node.parentNode ) {
+			if ( node.className && (' ' + node.className + ' ').indexOf(' wpview-wrap ') !== -1 ) {
+				return node;
+			}
+
+			node = node.parentNode;
+		}
+
+		return false;
 	}
 
 	/**
@@ -54,6 +62,7 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 	function setViewCursor( before, view ) {
 		var location = before ? 'before' : 'after',
 			offset = before ? 0 : 1;
+		deselect();
 		editor.selection.setCursorLocation( editor.dom.select( '.wpview-selection-' + location, view )[0], offset );
 		editor.nodeChanged();
 	}
@@ -110,6 +119,8 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 		dom.bind( clipboard, 'beforedeactivate focusin focusout', _stop );
 		dom.bind( selected, 'beforedeactivate focusin focusout', _stop );
 
+		tinymce.DOM.addClass( editor.getContainer(), 'wpview-selected' );
+
 		// Make sure that the editor is focused.
 		// It is possible that the editor is not focused when the mouse event fires
 		// without focus, the selection will not work properly.
@@ -119,7 +130,7 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 		editor.selection.select( clipboard, true );
 		editor.nodeChanged();
 
-		jQuery( viewNode ).trigger( 'select' );
+		jquery( viewNode ).trigger( 'select' );
 	}
 
 	/**
@@ -275,6 +286,8 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 			var view = getView( event.target ),
 				deselectEventType;
 
+			firstFocus = false;
+
 			// Contain clicks inside the view wrapper
 			if ( view ) {
 				event.stopPropagation();
@@ -288,9 +301,10 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 
 				if ( event.type === 'click' && ! event.metaKey && ! event.ctrlKey ) {
 					if ( editor.dom.hasClass( event.target, 'edit' ) ) {
-						jQuery( view ).trigger( 'edit' );
+						jquery( view ).trigger( 'edit' );
+						wp.mce.views.edit( view );
 					} else if ( editor.dom.hasClass( event.target, 'remove' ) ) {
-						jQuery( view ).trigger( 'remove' );
+						jquery( view ).trigger( 'remove' );
 						editor.dom.remove( view );
 					}
 				}
@@ -369,14 +383,10 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 				tempRange = selection.getRng();
 				clonedRange.setEnd( tempRange.endContainer, tempRange.endOffset );
 				selection.setRng( clonedRange );
-
-				return;
 			} else if ( view = getView( range.startContainer ) ) {
 				clonedRange = range.cloneRange();
 				clonedRange.setStart( view.nextSibling, 0 );
 				selection.setRng( clonedRange );
-
-				return;
 			}
 		}
 
@@ -402,30 +412,26 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 					}
 				}
 			} else {
-				handleEnter( view, true );
+				setViewCursor( true, view );
 			}
 			event.preventDefault();
 		} else if ( cursorAfter && ( keyCode === VK.DOWN || keyCode === VK.RIGHT ) ) {
 			if ( view.nextSibling ) {
 				if ( getView( view.nextSibling ) ) {
-					setViewCursor( false, view.nextSibling );
+					setViewCursor( keyCode === VK.RIGHT, view.nextSibling );
 				} else {
 					selection.setCursorLocation( view.nextSibling, 0 );
 				}
-			} else {
-				handleEnter( view );
 			}
 			event.preventDefault();
 		} else if ( cursorBefore && ( keyCode === VK.UP || keyCode ===  VK.LEFT ) ) {
 			if ( view.previousSibling ) {
 				if ( getView( view.previousSibling ) ) {
-					setViewCursor( true, view.previousSibling );
+					setViewCursor( keyCode === VK.UP, view.previousSibling );
 				} else {
 					selection.select( view.previousSibling, true );
 					selection.collapse();
 				}
-			} else {
-				handleEnter( view, true );
 			}
 			event.preventDefault();
 		} else if ( cursorBefore && keyCode === VK.DOWN ) {
@@ -436,7 +442,7 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 					selection.setCursorLocation( view.nextSibling, 0 );
 				}
 			} else {
-				handleEnter( view );
+				setViewCursor( false, view );
 			}
 			event.preventDefault();
 		} else if ( ( cursorAfter && keyCode === VK.LEFT ) || ( cursorBefore && keyCode === VK.RIGHT ) ) {
@@ -494,33 +500,31 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 
 		if ( keyCode === VK.LEFT ) {
 			setViewCursor( true, view );
-			deselect();
 		} else if ( keyCode === VK.UP ) {
 			if ( view.previousSibling ) {
 				if ( getView( view.previousSibling ) ) {
 					setViewCursor( true, view.previousSibling );
 				} else {
+					deselect();
 					selection.select( view.previousSibling, true );
 					selection.collapse();
 				}
 			} else {
-				handleEnter( view, true );
+				setViewCursor( true, view );
 			}
-			deselect();
 		} else if ( keyCode === VK.RIGHT ) {
 			setViewCursor( false, view );
-			deselect();
 		} else if ( keyCode === VK.DOWN ) {
 			if ( view.nextSibling ) {
 				if ( getView( view.nextSibling ) ) {
 					setViewCursor( false, view.nextSibling );
 				} else {
+					deselect();
 					selection.setCursorLocation( view.nextSibling, 0 );
 				}
 			} else {
-				handleEnter( view );
+				setViewCursor( false, view );
 			}
-			deselect();
 		} else if ( keyCode === VK.ENTER ) {
 			handleEnter( view );
 		} else if ( keyCode === VK.DELETE || keyCode === VK.BACKSPACE ) {
@@ -561,6 +565,26 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 		}
 	});
 
+	editor.on( 'focus', function() {
+		var view;
+
+		focus = true;
+		editor.dom.addClass( editor.getBody(), 'has-focus' );
+
+		// Edge case: show the fake caret when the editor is focused for the first time
+		// and the first element is a view.
+		if ( firstFocus && ( view = getView( editor.getBody().firstChild ) ) ) {
+			setViewCursor( true, view );
+		}
+
+		firstFocus = false;
+	} );
+
+	editor.on( 'blur', function() {
+		focus = false;
+		editor.dom.removeClass( editor.getBody(), 'has-focus' );
+	} );
+
 	editor.on( 'nodechange', function( event ) {
 		var dom = editor.dom,
 			views = editor.dom.select( '.wpview-wrap' ),
@@ -576,35 +600,58 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 		dom.removeClass( views, 'wpview-selection-after' );
 		dom.removeClass( views, 'wpview-cursor-hide' );
 
-		if ( view ) {
-			if ( className === 'wpview-selection-before' || className === 'wpview-selection-after' ) {
-				setViewCursorTries = 0;
+		if ( ! selected ) {
+			tinymce.DOM.removeClass( editor.getContainer(), 'wpview-selected' );
+		}
 
-				// Make sure the cursor arrived in the right node.
-				// This is necessary for Firefox.
-				if ( lKDN === view.previousSibling ) {
-					setViewCursor( true, view );
-					return;
-				} else if ( lKDN === view.nextSibling ) {
-					setViewCursor( false, view );
-					return;
-				}
+		if ( focus ) {
+			if ( view ) {
+				if ( className === 'wpview-selection-before' || className === 'wpview-selection-after' && editor.selection.isCollapsed() ) {
+					setViewCursorTries = 0;
 
-				dom.addClass( view, className );
+					deselect();
 
-				cursorInterval = setInterval( function() {
-					if ( dom.hasClass( view, 'wpview-cursor-hide' ) ) {
-						dom.removeClass( view, 'wpview-cursor-hide' );
-					} else {
-						dom.addClass( view, 'wpview-cursor-hide' );
+					tinymce.DOM.addClass( editor.getContainer(), 'wpview-selected' );
+
+					// Make sure the cursor arrived in the right node.
+					// This is necessary for Firefox.
+					if ( lKDN === view.previousSibling ) {
+						setViewCursor( true, view );
+						return;
+					} else if ( lKDN === view.nextSibling ) {
+						setViewCursor( false, view );
+						return;
 					}
-				}, 500 );
-			// If the cursor happens to be anywhere around the view, then set the cursor properly.
-			// Only try this once to prevent a loop. (You never know.)
-			} else if ( ! selected && ! setViewCursorTries ) {
-				setViewCursorTries++;
-				setViewCursor( true, view );
+
+					dom.addClass( view, className );
+
+					cursorInterval = setInterval( function() {
+						if ( dom.hasClass( view, 'wpview-cursor-hide' ) ) {
+							dom.removeClass( view, 'wpview-cursor-hide' );
+						} else {
+							dom.addClass( view, 'wpview-cursor-hide' );
+						}
+					}, 500 );
+				// If the cursor lands anywhere else in the view, set the cursor before it.
+				// Only try this once to prevent a loop. (You never know.)
+				} else if ( className !== 'wpview-clipboard' && ! setViewCursorTries ) {
+					deselect();
+					setViewCursorTries++;
+					setViewCursor( true, view );
+				}
+			} else {
+				deselect();
 			}
+		}
+	});
+
+	editor.on( 'resolvename', function( event ) {
+		if ( editor.dom.hasClass( event.target, 'wpview-wrap' ) ) {
+			event.name = editor.dom.getAttrib( event.target, 'data-wpview-type' ) || 'wpview';
+			event.stopPropagation();
+		} else if ( getView( event.target ) ) {
+			event.preventDefault();
+			event.stopPropagation();
 		}
 	});
 
