@@ -224,7 +224,6 @@ if ( ! class_exists( 'Editor_Experiments' ) ) {
 
 	}
 
-	require_once( 'focus/focus.php' );
 	require_once( 'google-maps-block/google-maps-block.php' );
 
 }

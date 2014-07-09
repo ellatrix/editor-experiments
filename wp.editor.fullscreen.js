@@ -51,8 +51,4 @@
 	window.wp.editor = window.wp.editor || {};
 	window.wp.editor.fullscreen = fullscreen;
 
-	$( wp ).on( 'ready.editor.fade', function() {
-		wp.editor.fade.auto();
-	} );
-
 } )( jQuery, window );

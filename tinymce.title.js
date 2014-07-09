@@ -101,12 +101,20 @@ tinymce.PluginManager.add( 'title', function( editor ) {
 
 	editor.on( 'show BeforeRenderUI', function() {
 		tinymce.DOM.hide( 'titlediv' );
-		tinymce.DOM.hide( 'wp-' + editor.id + '-editor-tools' );
+		jQuery( '#wp-content-editor-tools' ).css( {
+			'height': '0',
+			'visibility': 'hidden',
+			'padding-top': '0'
+		} );
 	} );
 
 	editor.on( 'hide', function() {
 		tinymce.DOM.show( 'titlediv' );
-		tinymce.DOM.show( 'wp-' + editor.id + '-editor-tools' );
+		jQuery( '#wp-content-editor-tools' ).css( {
+			'height': '',
+			'visibility': '',
+			'padding-top': ''
+		} );
 	} );
 
 } );

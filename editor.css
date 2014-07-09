@@ -153,6 +153,10 @@ i.mce-i-editor-code:before {
 	position: relative;
 }
 
+#wp-content-wrap.tmce-active {
+	padding-top: 0 !important;
+}
+
 #wp-block-modal {
 	position: fixed;
 	top: 0;

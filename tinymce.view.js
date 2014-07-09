@@ -130,7 +130,7 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 		editor.selection.select( clipboard, true );
 		editor.nodeChanged();
 
-		jquery( viewNode ).trigger( 'select' );
+		jQuery( viewNode ).trigger( 'select' );
 	}
 
 	/**
@@ -301,10 +301,10 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 
 				if ( event.type === 'click' && ! event.metaKey && ! event.ctrlKey ) {
 					if ( editor.dom.hasClass( event.target, 'edit' ) ) {
-						jquery( view ).trigger( 'edit' );
+						jQuery( view ).trigger( 'edit' );
 						wp.mce.views.edit( view );
 					} else if ( editor.dom.hasClass( event.target, 'remove' ) ) {
-						jquery( view ).trigger( 'remove' );
+						jQuery( view ).trigger( 'remove' );
 						editor.dom.remove( view );
 					}
 				}
@@ -657,6 +657,7 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 
 	return {
 		getViewText: getViewText,
-		setViewText: setViewText
+		setViewText: setViewText,
+		getView: getView
 	};
 });

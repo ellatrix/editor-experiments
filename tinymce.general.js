@@ -75,6 +75,7 @@ tinymce.PluginManager.add( 'general', function( editor ) {
 	editor.setUIColor( '.wpview-wrap[data-mce-selected]:before', 'border-color' );
 	editor.setUIColor( '.wpview-type-more span:before, .wpview-type-more span:after', 'border-bottom-color' );
 	editor.setUIColor( '.wpview-wrap.wpview-selection-before:before,.wpview-wrap.wpview-selection-after:before', 'background-color' );
+	editor.setUIColor( '.has-focus .wpview-wrap.wpview-selection-before:before, .has-focus .wpview-wrap.wpview-selection-after:before', 'background-color' );
 
 	editor.wp.getView = function( node ) {
 		return editor.dom.getParent( node, function( node ) {
