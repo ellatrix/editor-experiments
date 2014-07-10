@@ -6,7 +6,7 @@
 	views.register( 'map', {
 		overlay: true,
 		content: function( doc, iframe, view, editor ) {
-			if ( typeof google === 'undefined' ) {
+			if ( typeof google === 'undefined' || ! google.maps ) {
 				this.setError( 'Google Maps seems to be down.' );
 				return;
 			}

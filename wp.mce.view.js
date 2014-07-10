@@ -73,10 +73,7 @@ window.wp = window.wp || {};
 					if ( loadIframe ) {
 						self.setSingleIframeContent( {
 							html: html,
-							styles: [ tinymce.settings.iframeViewCSS, tinymce.settings.buttonsCSS, tinymce.settings.formsCSS ],
-							window: {
-								attributes: self.shortcode.attrs.named
-							}
+							styles: [ tinymce.settings.iframeViewCSS ]
 						}, editor, node, function( editor, node, iframe ) {
 							self.content( iframe.contentWindow.document, iframe, $( node ).parents( '.wpview-wrap' )[0], editor );
 						} );
@@ -169,7 +166,7 @@ window.wp = window.wp || {};
 		/* jshint scripturl: true */
 		setSingleIframeContent: function( options, editor, node, callback ) {
 			var MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver,
-				iframe, iframeDoc, i, resize, styles = '', scripts = '';
+				iframe, iframeDoc, i, resize, styles = '';
 
 			node = $( node ).find( '.wpview-content' )[0];
 
@@ -193,24 +190,12 @@ window.wp = window.wp || {};
 				} );
 			}
 
-			if ( options.scripts ) {
-				_.each( options.scripts, function( value ) {
-					scripts += '<script type="text/javascript" src="' + value + '"></script>';
-				} );
-			}
-
-			if ( options.window ) {
-				_.each( options.window, function( value, key ) {
-					iframe.contentWindow[key] = value;
-				} );
-			}
-
 			iframeDoc.write(
 				'<!DOCTYPE html>' +
 				'<html>' +
 					'<head>' +
 						'<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />' +
-						styles + scripts +
+						styles +
 					'</head>' +
 					'<body class="wp-core-ui">' +
 						( options.html ? options.html : '' ) +

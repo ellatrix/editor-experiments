@@ -17,10 +17,21 @@ if ( ! class_exists( 'Editor_Experiments' ) ) {
 }
 
 add_action( 'wp_enqueue_scripts', 'google_map_block_enqueue_scripts' );
+add_action( 'admin_enqueue_scripts', 'google_map_block_admin_enqueue_scripts' );
 add_action( 'print_media_templates', 'google_map_block_print_media_templates' );
 
 function google_map_block_enqueue_scripts() {
-	wp_enqueue_script( 'google-maps-api', 'https://maps.googleapis.com/maps/api/js?sensor=false' );
+	if ( has_shortcode( $GLOBALS['post']->post_content, 'map') ) {
+		wp_enqueue_script( 'google-maps-api', 'https://maps.googleapis.com/maps/api/js?sensor=false' );
+		wp_enqueue_script( 'google-maps-map', plugins_url( 'front.js', __FILE__ ) );
+	}
+}
+
+function google_map_block_admin_enqueue_scripts( $screen ) {
+	if ( $screen === 'post.php' || $screen === 'post-new.php' ) {
+		wp_enqueue_script( 'google-maps-api', 'https://maps.googleapis.com/maps/api/js?sensor=false&amp;libraries=places' );
+		wp_enqueue_script( 'map-view-registration', plugins_url( 'back.js', __FILE__ ), array( 'mce-view' ), false, true );
+	}
 }
 
 function google_map_block_print_media_templates() {
@@ -41,14 +52,16 @@ function google_map_block_print_media_templates() {
 	<?php
 }
 
-add_action( 'admin_enqueue_scripts', 'google_map_block_admin_enqueue_scripts' );
-
-function google_map_block_admin_enqueue_scripts() {
-	wp_enqueue_script( 'google-maps-api', 'https://maps.googleapis.com/maps/api/js?sensor=false&amp;libraries=places' );
+function google_maps_block_callback( $attributes, $content, $tag ) {
+	$out = '<div class="map"';
+	foreach ( $attributes as $attribute => $value ) {
+		$out .= ' data-' . $attribute . '="' . $value . '"';
+	}
+	return $out . '></div><style type="text/css">.map img { max-width: none; }</style>';
 }
 
 register_shortcode( 'map', array(
-	'__FILE__' => __FILE__,
+	'callback' => 'google_maps_block_callback',
 	'content' => false,
 	'block' => true,
 	'attributes' => array(
@@ -77,5 +90,5 @@ register_shortcode( 'map', array(
 			'defaults' => 'roadmap'
 		)
 	),
-	'scripts' => array( 'google-maps-api' )
+	'scripts' => true
 ) );
