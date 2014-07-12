@@ -14,6 +14,10 @@ body {
 	padding-right: 0 !important;
 }
 
+*::selection {
+	background: rgba( 109, 169, 247, 0.5 );
+}
+
 /* Makes all paragraphs visible. */
 p:empty {
 	min-height: 20px;
@@ -188,4 +192,8 @@ hr[data-mce-selected]:before {
 .wpview-type-more span:after {
 	left: 100%;
 	margin-left: 5px;
+}
+
+.map img {
+	max-width: none;
 }

@@ -15,7 +15,7 @@ License URI: http://www.gnu.org/licenses/gpl-2.0.html
 if ( ! class_exists( 'Editor_Experiments' ) ) {
 
 	class Editor_Experiments {
-		const WP_VERSION = '4.0-alpha-28611-src';
+		const WP_VERSION = '4.0-beta1-src';
 
 		function __construct() {
 			if ( is_admin() ) {
@@ -28,7 +28,6 @@ if ( ! class_exists( 'Editor_Experiments' ) ) {
 				add_action( 'mce_buttons_2', array( $this, 'mce_buttons_2' ), 10, 2 );
 				add_action( 'tiny_mce_before_init', array( $this, 'tiny_mce_before_init' ) );
 				add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
-				add_action( 'wp_enqueue_editor', array( $this, 'wp_enqueue_editor_shortcodes' ) );
 			}
 		}
 
@@ -93,7 +92,6 @@ if ( ! class_exists( 'Editor_Experiments' ) ) {
 		function tiny_mce_before_init( $init ) {
 			global $_shortcodes, $wp_scripts;
 
-			$init['iframeViewCSS'] = plugins_url( 'iframe.css', __FILE__ );
 			$init['_shortcodes'] = json_encode( $_shortcodes );
 
 			return $init;

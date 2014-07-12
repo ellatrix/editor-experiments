@@ -52,8 +52,7 @@ window.wp = window.wp || {};
 		content: function() {},
 		render: function() {
 			var self = this,
-				html = this.getHtml.apply( this, _.values( this.options ) ) || '',
-				loadIframe = ( html && html.indexOf( '<script' ) !== -1 ) || ( this.settings && this.settings.scripts ) || this.iframe;
+				html = this.getHtml.apply( this, _.values( this.options ) ) || '';
 
 			this.setWrap(
 				'<p class="wpview-selection-before">\u00a0</p>' +
@@ -64,22 +63,13 @@ window.wp = window.wp || {};
 					'</div>' +
 					'<div class="wpview-edit-placeholder" style="height:200px;display:none;"></div>' +
 					'<div class="wpview-content wpview-type-' + this.type + '">' +
-						( loadIframe ? '' : html ) +
+						html +
 					'</div>' +
 					( this.overlay ? '<div class="wpview-overlay"></div>' : '' ) +
 				'</div>' +
 				'<p class="wpview-selection-after">\u00a0</p>',
 				function( editor, node ) {
-					if ( loadIframe ) {
-						self.setSingleIframeContent( {
-							html: html,
-							styles: [ tinymce.settings.iframeViewCSS ]
-						}, editor, node, function( editor, node, iframe ) {
-							self.content( iframe.contentWindow.document, iframe, $( node ).parents( '.wpview-wrap' )[0], editor );
-						} );
-					}
-
-					$( self ).trigger( 'ready', [ editor, node ] );
+					$( self ).trigger( 'ready', [ editor, node, $( node ).find( '.wpview-content' )[0] ] );
 				}
 			);
 		},
@@ -242,6 +232,107 @@ window.wp = window.wp || {};
 					'<p>' + message + '</p>' +
 				'</div>'
 			);
+		},
+		inlineControls: function( arg ) {
+			var self = this,
+				attributes = this.shortcode.attrs.named,
+				modal, $template, input = {}, firstInput,
+				$view = $( arg.viewNode ),
+				editor = arg.editor;
+
+			modal = document.createElement( 'DIV' );
+			modal.className = 'wp-block-edit';
+
+			document.body.appendChild( modal );
+
+			$template = $( $.trim( arg.template() ) );
+
+			modal.appendChild( $template[0] );
+
+			$( modal ).hide();
+
+			$template
+			.find( 'input' )
+			.add( $template.find( 'select' ) )
+			.add( $template.find( 'textarea' ) )
+			.each( function() {
+				var $this = $( this ),
+					name = $( this ).attr( 'name' );
+
+				if ( ! firstInput && $this.attr('type') !== 'hidden' ) {
+					firstInput = $this;
+				}
+
+				if ( name ) {
+					input[ '$' + name ] = $this;
+
+					if ( attributes[ name ] ) {
+						if ( $this.is( ':checkbox' ) ) {
+							$this.prop( 'checked', attributes[ name ] );
+						} else {
+							$this.val( attributes[ name ] );
+						}
+					}
+				}
+			} );
+
+			$view.on( 'select', function() {
+				var editorBody = editor.getBody(),
+					editorIframeOffset = $( editor.getContentAreaContainer().getElementsByTagName( 'iframe' ) ).offset();
+
+				$( modal ).css( {
+					opacity: 0,
+					top: editorIframeOffset.top + editor.dom.getPos( $view[0] ).y,
+					left: editorIframeOffset.left + editor.dom.getPos( editorBody ).x,
+					width: editorBody.offsetWidth
+				} );
+
+				$view
+				.find( '.wpview-edit-placeholder' )
+				.height( $( modal ).outerHeight() + 5 )
+				.slideDown( 'fast', function() {
+					firstInput && firstInput.focus();
+					$( modal ).css( 'opacity', '' ).fadeIn();
+				} );
+			} );
+
+			editor.on( 'nodechange', function( event ) {
+				if ( event.element !== $view.find( '.wpview-clipboard' )[0] ) {
+					$.fn.serializeObject = function() {
+						var object = {},
+							array = this.serializeArray();
+						$.each( array, function() {
+							if ( object[ this.name ] !== undefined ) {
+								if ( ! object[ this.name ].push ) {
+									object[ this.name ] = [ object[ this.name ] ];
+								}
+								object[ this.name ].push( this.value || '' );
+							} else {
+								object[ this.name ] = this.value || '';
+							}
+						} );
+						return object;
+					};
+
+					if ( $template && $template.length ) {
+						wp.mce.views.refreshView( self, self.formToShortcode( $template.serializeObject() ), $view[0], true );
+						editor.undoManager.add();
+					}
+
+					$( modal ).hide();
+					$view.find( '.wpview-edit-placeholder' ).hide();
+				}
+			} );
+
+			$view.on( 'deselect', function() {
+				$view.find( '.wpview-edit-placeholder' ).slideUp();
+			} );
+
+			return {
+				input: input,
+				$template: $template,
+				modal: modal
+			};
 		}
 	} );
 
@@ -987,7 +1078,7 @@ window.wp = window.wp || {};
 	};
 
 	wp.editor.fade.In = function( event ) {
-		var panels = $( '.mce-popover, .mce-menu' );
+		var panels = $( '.mce-popover' ).add( '.mce-menu' ).add( '.wp-block-edit' );
 
 		if ( ! event ) {
 			this.auto();

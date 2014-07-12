@@ -1,3 +1,5 @@
+/* global google */
+
 ( function() {
 	'use strict';
 
@@ -9,9 +11,9 @@
 
 	gmaps.event.addDomListener( window, 'load', function() {
 		var maps = document.querySelectorAll( '.map' ),
-			map, attributes, gmap, latLng, marker;
+			i, map, attributes, gmap, latLng, marker;
 
-		for ( var i = 0; i < maps.length; ++i ) {
+		for ( i = 0; i < maps.length; ++i ) {
 			map = maps[i];
 			attributes = map.dataset;
 
