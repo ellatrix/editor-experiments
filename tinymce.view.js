@@ -12,9 +12,16 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 		cursorInterval, lastKeyDownNode, setViewCursorTries, focus;
 
 	function getView( node ) {
-		// Doing this directly is about 40% faster
+		return getParent( node, 'wpview-wrap' );
+	}
+
+	/**
+	 * Returns the node or a parent of the node that has the passed className.
+	 * Doing this directly is about 40% faster
+	 */
+	function getParent( node, className ) {
 		while ( node && node.parentNode ) {
-			if ( node.className && (' ' + node.className + ' ').indexOf(' wpview-wrap ') !== -1 ) {
+			if ( node.className && (' ' + node.className + ' ').indexOf(' ' + className + ' ') !== -1 ) {
 				return node;
 			}
 
@@ -67,31 +74,28 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 		editor.nodeChanged();
 	}
 
-	function handleEnter( view, before ) {
+	function handleEnter( view, before, keyCode ) {
 		var dom = editor.dom,
-			padNode;
-
-		if ( ! before && view.nextSibling && dom.isEmpty( view.nextSibling ) && view.nextSibling.nodeName === 'P' ) {
-			padNode = view.nextSibling;
-		} else if ( before && view.previousSibling && dom.isEmpty( view.previousSibling ) && view.previousSibling.nodeName === 'P' ) {
-			padNode = view.previousSibling;
-		} else {
 			padNode = dom.create( 'p' );
 
-			if ( ! ( Env.ie && Env.ie < 11 ) ) {
-				padNode.innerHTML = '<br data-mce-bogus="1">';
-			}
+		if ( ! ( Env.ie && Env.ie < 11 ) ) {
+			padNode.innerHTML = '<br data-mce-bogus="1">';
+		}
 
-			if ( before ) {
-				view.parentNode.insertBefore( padNode, view );
-			} else {
-				dom.insertAfter( padNode, view );
-			}
+		if ( before ) {
+			view.parentNode.insertBefore( padNode, view );
+		} else {
+			dom.insertAfter( padNode, view );
 		}
 
 		deselect();
-		editor.getBody().focus();
-		editor.selection.setCursorLocation( padNode, 0 );
+
+		if ( before && keyCode === VK.ENTER ) {
+			setViewCursor( before, view );
+		} else {
+			editor.selection.setCursorLocation( padNode, 0 );
+		}
+
 		editor.nodeChanged();
 	}
 
@@ -118,8 +122,6 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 		// Both of the following are necessary to prevent manipulating the selection/focus
 		dom.bind( clipboard, 'beforedeactivate focusin focusout', _stop );
 		dom.bind( selected, 'beforedeactivate focusin focusout', _stop );
-
-		tinymce.DOM.addClass( editor.getContainer(), 'wpview-selected' );
 
 		// Make sure that the editor is focused.
 		// It is possible that the editor is not focused when the mouse event fires
@@ -455,7 +457,7 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 		} else if ( cursorAfter ) {
 			handleEnter( view );
 		} else if ( cursorBefore ) {
-			handleEnter( view , true);
+			handleEnter( view , true, keyCode );
 		}
 
 		if ( keyCode === VK.ENTER ) {
@@ -512,6 +514,7 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 			} else {
 				setViewCursor( true, view );
 			}
+
 		} else if ( keyCode === VK.RIGHT ) {
 			setViewCursor( false, view );
 		} else if ( keyCode === VK.DOWN ) {
@@ -600,18 +603,12 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 		dom.removeClass( views, 'wpview-selection-after' );
 		dom.removeClass( views, 'wpview-cursor-hide' );
 
-		if ( ! selected ) {
-			tinymce.DOM.removeClass( editor.getContainer(), 'wpview-selected' );
-		}
-
 		if ( focus ) {
 			if ( view ) {
 				if ( className === 'wpview-selection-before' || className === 'wpview-selection-after' && editor.selection.isCollapsed() ) {
 					setViewCursorTries = 0;
 
 					deselect();
-
-					tinymce.DOM.addClass( editor.getContainer(), 'wpview-selected' );
 
 					// Make sure the cursor arrived in the right node.
 					// This is necessary for Firefox.
@@ -634,7 +631,7 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 					}, 500 );
 				// If the cursor lands anywhere else in the view, set the cursor before it.
 				// Only try this once to prevent a loop. (You never know.)
-				} else if ( className !== 'wpview-clipboard' && ! setViewCursorTries ) {
+				} else if ( ! getParent( event.element, 'wpview-clipboard' ) && ! setViewCursorTries ) {
 					deselect();
 					setViewCursorTries++;
 					setViewCursor( true, view );

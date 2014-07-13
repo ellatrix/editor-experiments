@@ -9,15 +9,19 @@
 
 			$( this ).on( 'ready', function( event, editor, node, content ) {
 				if ( typeof google === 'undefined' || ! google.maps ) {
-					self.setError( 'Google Maps seems to be down.' );
-					return;
+					return self.setError( 'Google Maps seems to be down.' );
 				}
 
-				var inlineControls, input,
-					mapElement, latLng, map, marker, autocomplete,
+				var inlineControls = this.inlineControls( {
+						template: wp.media.template( 'google-maps-edit' ),
+						viewNode: node,
+						editor: editor
+					} ),
+					input = inlineControls.input,
 					attributes = self.shortcode.attrs.named,
 					maps = google.maps,
-					addListener = maps.event.addListener;
+					addListener = maps.event.addListener,
+					mapElement, latLng, map, marker, autocomplete;
 
 				mapElement = editor.dom.create( 'div' );
 				mapElement.className = 'map';
@@ -39,14 +43,6 @@
 					draggable: true,
 					visible: !! attributes.marker
 				} );
-
-				inlineControls = this.inlineControls( {
-					template: wp.media.template( 'google-maps-edit' ),
-					viewNode: node,
-					editor: editor
-				} );
-
-				input = inlineControls.input;
 
 				autocomplete = new maps.places.Autocomplete( input.$address[0] );
 				autocomplete.bindTo( 'bounds', map );
