@@ -4,11 +4,11 @@ tinymce.PluginManager.add( 'toolbar', function( editor ) {
 
 	var each = tinymce.each,
 		dom = tinymce.DOM,
-		toolbar, lastNodeChange;
+		toolbar;
 
 	editor.on( 'nodechange', function( event ) {
 		if ( ! editor.selection.isCollapsed() &&
-				editor.selection.getContent().trim() &&
+				editor.selection.getContent().replace( /<[^>]+>/g, '' ).trim() &&
 				event.element.nodeName !== 'IMG' &&
 				event.element.nodeName !== 'HR' &&
 				event.element.id !== 'wp-title' &&
@@ -27,9 +27,19 @@ tinymce.PluginManager.add( 'toolbar', function( editor ) {
 		toolbar.hide();
 	} );
 
-	editor.on( 'PreInit', createToolbar );
+	function getParent( node, nodeName ) {
+		while ( node ) {
+			if ( node.nodeName === nodeName ) {
+				return node;
+			}
 
-	function createToolbar() {
+			node = node.parentNode;
+		}
+
+		return false;
+	}
+
+	editor.on( 'PreInit', function() {
 		var inlineToolbar = editor.settings.inlineToolbar || 'bold italic strikethrough link unlink blockquote h2 h3',
 			buttons = [];
 
@@ -40,31 +50,20 @@ tinymce.PluginManager.add( 'toolbar', function( editor ) {
 				item.type = item.type || 'button';
 				item.tooltip = false;
 
-				// Auto select a link when clicked, and (de)activate the link button appropriately.
 				if ( name === 'link' ) {
 					item.onPostRender = function() {
 						var self = this;
 
 						editor.on( 'NodeChange', function( event ) {
-							if ( event.element.nodeName === 'A' && editor.selection.isCollapsed() ) {
-								if ( ! lastNodeChange || lastNodeChange && lastNodeChange.element !== event.element ) {
-									editor.selection.select( event.element );
-									editor.nodeChanged();
-								}
-							}
-
-							self.active( event.element.nodeName === 'A' );
-
-							lastNodeChange = event;
+							self.active( getParent( event.element, 'A' ) );
 						} );
 					};
-				// Only show the unlink buton when there is a link in the selection.
 				} else if ( name === 'unlink' ) {
 					item.onPostRender = function() {
 						var self = this;
 
-						editor.on( 'NodeChange', function() {
-							self.disabled( editor.selection.getContent().indexOf( '<a href' ) === -1 );
+						editor.on( 'NodeChange', function( event ) {
+							self.disabled( event.element.nodeName !== 'A' && editor.selection.getContent().indexOf( '<a' ) === -1 );
 						} );
 					};
 				}
@@ -99,9 +98,7 @@ tinymce.PluginManager.add( 'toolbar', function( editor ) {
 		} );
 
 		dom.bind( window, 'resize', function() {
-			if ( toolbar._visible ) {
-				toolbar.hide();
-			}
+			toolbar.hide();
 		} );
 
 		toolbar.setPos = function() {
@@ -141,7 +138,7 @@ tinymce.PluginManager.add( 'toolbar', function( editor ) {
 		toolbar.renderTo( document.body ).hide();
 
 		editor.inlineToolbar = toolbar;
-	}
+	} );
 
 	each( {
 		H1: 'Heading 1',

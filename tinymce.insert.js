@@ -1,252 +1,284 @@
 /* global tinymce */
 
 tinymce.PluginManager.add( 'insert', function( editor ) {
+	'use strict';
 
-	var insert, insertLocation,
-		matchInsert = /<(P|BLOCKQUOTE)[^>]+id="wp-insert-block"[^>]*>[\s\S]*<\/(P|BLOCKQUOTE)>/gi;
+	var insert, insertModal,
+		DOM = tinymce.DOM;
 
-	editor.on( 'keyup click ExecCommand AddUndo', function( event ) {
+	editor.on( 'NodeChange', function( event ) {
+		var node = event.element;
 
-		var dom = editor.dom,
-			alignleft, empty, fontSize, offset, range, selection;
+		insert.hide();
 
-		if ( event.type === 'addundo' && ! event.lastlevel ) {
-			return;
+		node = node.nodeName === 'BR' ? node.parentNode : node;
+
+		if ( node.nodeName === 'P' && editor.dom.isEmpty( node ) && ! editor.wp.getView( node ) ) {
+			insert.show( node );
 		}
+	} );
 
-		if ( event.type === 'click' && ( event.target === insert || event.target.parentNode === insert ) ) {
-			event.stopPropagation();
-			removeElement();
-			editor.selection.setCursorLocation( insertLocation );
-			editor.fire( 'wpInsertClicked' );
-			return;
-		}
+	editor.on( 'keydown blur', function() {
+		insert.hide();
+	} );
 
-		selection = editor.selection.getStart();
-		range = editor.selection.getRng();
-
-		if ( selection.nodeName !== 'P' ) {
-			selection = dom.getParent( selection, 'P' );
-		}
-
-		removeElement();
-
-		if ( ! selection || editor.wp.getView( selection ) ) {
-			return;
-		}
-
-		empty = dom.isEmpty( selection );
-
-		if ( selection && empty && selection.nodeName === 'P' ) {
-			offset = dom.getPos( selection );
-			fontSize = dom.getStyle( selection, 'font-size', true );
-			insert = editor.dom.create(
-				( selection.parentNode.nodeName === 'BLOCKQUOTE' ? 'BLOCKQUOTE' : 'P' ),
-				{
-					id: 'wp-insert-block',
-					contenteditable: false
-				},
-				'<span class="dashicons dashicons-plus-alt" style="width: ' + fontSize + ';"></span> Add a content block'
-			);
-			dom.setStyles( insert, { 'top': offset.y - 2, 'left': offset.x + 10 } );
-			editor.getBody().appendChild( insert );
-			insertLocation = selection;
-		} else if ( range && selection && ! empty && editor.selection.isCollapsed() && range.startOffset === 0 && range.endOffset === 0 ) {
-			alignleft = selection.querySelector( '.alignleft' );
-			if ( ! alignleft ) {
-				offset = dom.getPos( selection );
-				fontSize = dom.getStyle( selection, 'font-size', true );
-				insert = editor.dom.create(
-					'P',
-					{
-						id: 'wp-insert-block',
-						contenteditable: false
-					},
-					'<span class="dashicons dashicons-plus-alt" style="width: ' + fontSize + ';">'
-				);
-				dom.setStyles( insert, { 'top': offset.y - 2, 'left': offset.x - fontSize.slice( 0, -2 ) - 5 } );
-				editor.getBody().appendChild( insert );
-				insertLocation = selection;
+	function getParent( node ) {
+		while ( node ) {
+			if ( node.parentNode === editor.getBody() ) {
+				return node;
 			}
+
+			node = node.parentNode;
 		}
 
-	} );
-
-	editor.on( 'keydown blur', removeElement );
-
-	editor.on( 'PostProcess', function( event ) {
-		if ( event.get ) {
-			event.content = event.content.replace( matchInsert, '' );
-		}
-	} );
-
-	editor.on( 'BeforeAddUndo', function( event ) {
-		if ( event.level ) {
-			event.level.content = event.level.content.replace( matchInsert, '' );
-		}
-	} );
-
-	editor.on( 'wpInsertClicked', function() {
-		var modal, modalInner,
-			postDivRich = tinymce.DOM.select( '#postdivrich' )[0],
-			scrollY = window.pageYOffset,
-			postDivRichTop = postDivRich.getBoundingClientRect().top + scrollY,
-			postDivRichHeight = postDivRich.offsetHeight,
-			windowHeight = window.document.documentElement.clientHeight;
-
-		wp.editor.fade.Out();
-
-		tinymce.DOM.setStyles( postDivRich, { opacity: 0.1 } );
-
-		modalInner = tinymce.DOM.create( 'DIV', { id: 'wp-block-modal-inner' } );
-		modal = tinymce.DOM.create( 'DIV', { id: 'wp-block-modal' }, modalInner );
-
-		tinymce.DOM.setStyles( modalInner, { left: tinymce.DOM.getPos( postDivRich ).x, width: postDivRich.offsetWidth } );
-
-		document.body.appendChild( modal );
-
-		tinymce.each( editor.blocks, function( options ) {
-			var html;
-			html = '<div class="dashicons dashicons-' + options.icon + '"></div>' + options.title;
-			html = tinymce.DOM.create( 'DIV', { 'class': 'wp-block-modal-item' }, html );
-			tinymce.DOM.bind( html, 'click', function() {
-				options.onclick( editor );
-			} );
-			modalInner.appendChild( html );
-		} );
-
-		tinymce.DOM.bind( modal, 'click', function() {
-			wp.editor.fade.auto();
-			tinymce.DOM.removeClass( document.body, 'wp-block-modal-open' );
-			tinymce.DOM.setStyles( postDivRich, { opacity: 1 } );
-			tinymce.DOM.remove( modal );
-		} );
-
-		// We're blocking scrolling for the page, so make sure the block modal is fully in the viewport.
-		if ( postDivRichTop - 32 > scrollY ) {
-			window.scrollTo( 0, postDivRichTop - 32 ); // Admin bar.
-		} else if ( postDivRichTop + postDivRichHeight < scrollY + windowHeight ) {
-			window.scrollTo( 0, postDivRichTop + postDivRichHeight - windowHeight );
-		}
-
-		tinymce.DOM.addClass( document.body, 'wp-block-modal-open' );
-	} );
-
-	editor.on( 'PreInit', function() {
-		editor.blocks = {
-			image: {
-				title: 'Image',
-				icon: 'format-image',
-				onclick: function() {
-					var instance = wp.media.editor.open().setState( 'insert' );
-					jQuery( instance.el )
-						.find( 'select.attachment-filters' )
-						.val( 'image' )
-						.trigger( 'change' );
-				}
-			},
-			gallery: {
-				title: 'Gallery',
-				icon: 'format-gallery',
-				onclick: function() {
-					wp.media.editor.open().setState( 'gallery-library' );
-				}
-			},
-			audio: {
-				title: 'Audio',
-				icon: 'format-audio',
-				onclick: function() {
-					var instance = wp.media.editor.open().setState( 'insert' );
-					jQuery( instance.el )
-						.find( 'select.attachment-filters' )
-						.val( 'audio' )
-						.trigger( 'change' );
-				}
-			},
-			audioPlaylist: {
-				title: 'Audio Playlist',
-				icon: 'playlist-audio',
-				onclick: function() {
-					wp.media.editor.open().setState( 'playlist' );
-				}
-			},
-			video: {
-				title: 'Video',
-				icon: 'video-alt3',
-				onclick: function() {
-					var instance = wp.media.editor.open().setState( 'insert' );
-					jQuery( instance.el )
-						.find( 'select.attachment-filters' )
-						.val( 'video' )
-						.trigger( 'change' );
-				}
-			},
-			videoPlaylist: {
-				title: 'Video Playlist',
-				icon: 'playlist-video',
-				onclick: function() {
-					wp.media.editor.open().setState( 'video-playlist' );
-				}
-			},
-			blockQuote: {
-				title: 'Block Quote',
-				icon: 'format-quote',
-				onclick: function( editor ) {
-					editor.execCommand( 'mceBlockQuote' );
-				}
-			},
-			list: {
-				title: 'List',
-				icon: 'editor-ul',
-				onclick: function( editor ) {
-					editor.execCommand( 'InsertUnorderedList' );
-				}
-			},
-			table: {
-				title: 'Table',
-				icon: 'screenoptions',
-				onclick: function() {}
-			},
-			map: {
-				title: 'Map',
-				icon: 'location-alt',
-				onclick: function() {
-					editor.insertContent( '[map]' );
-				}
-			},
-			hr: {
-				title: 'Horizontal Rule',
-				icon: 'editor-insertmore',
-				onclick: function( editor ) {
-					editor.execCommand( 'InsertHorizontalRule' );
-				}
-			},
-			more: {
-				title: 'More...',
-				icon: 'editor-insertmore',
-				onclick: function( editor ) {
-					editor.execCommand( 'WP_More' );
-				}
-			},
-			nextPage: {
-				title: 'Next Page',
-				icon: 'editor-insertmore',
-				onclick: function( editor ) {
-					editor.execCommand( 'WP_Page' );
-				}
-			}
-		};
-	} );
-
-	function removeElement() {
-		if ( insert ) {
-			editor.dom.remove( insert );
-			insert = false;
-		}
+		return false;
 	}
 
+	editor.on( 'PreInit', function() {
+		insert = tinymce.ui.Factory.create( {
+			type: 'panel',
+			layout: 'stack',
+			classes: 'insert',
+			ariaRoot: true,
+			ariaRemember: true,
+			html: '<span class="dashicons dashicons-plus-alt"></span> Add a block',
+			onclick: function() {
+				if ( insertModal._visible ) {
+					insertModal.hide();
+					editor.focus();
+				} else {
+					insertModal.setPos();
+				}
+			}
+		} );
+
+		insertModal = tinymce.ui.Factory.create( {
+			type: 'panel',
+			layout: 'flow',
+			classes: 'insert-modal',
+			ariaRoot: true,
+			ariaRemember: true,
+			items: editor.blocks
+		} );
+
+		insert.on( 'show', function() {
+			this.setPos();
+		} );
+
+		insert.on( 'hide', function() {
+			insertModal.hide();
+		} );
+
+		DOM.bind( window, 'resize', function() {
+			insert.hide();
+		} );
+
+		insert.setPos = function( node ) {
+			node = node || editor.selection.getNode();
+			node = node.nodeName === 'BR' ? node.parentNode : node;
+
+			var insertEl = this.getEl(),
+				cursor = editor.dom.getPos(node ),
+				iframe = DOM.getPos( editor.getContentAreaContainer().querySelector( 'iframe' ) ),
+				diff = ( node.clientHeight - insertEl.clientHeight ) / 2;
+
+			DOM.setStyles( insertEl, {
+				'left': iframe.x + cursor.x,
+				'top': iframe.y + cursor.y + diff,
+				'color': editor.dom.getStyle( node, 'color', true )
+			} );
+
+			return this;
+		};
+
+		insert.renderTo( document.body ).hide();
+
+		insertModal.on( 'hide', function() {
+			editor.dom.remove( editor.dom.select( '.mce-insert-placeholder' ) );
+			DOM.removeClass( insert.getEl(), 'open' );
+		} );
+
+		DOM.bind( window, 'resize', function() {
+			insertModal.hide();
+		} );
+
+		insertModal.setPos = function( node ) {
+			node = node || editor.selection.getNode();
+			node = node.nodeName === 'BR' ? node.parentNode : node;
+
+			var dom = editor.dom,
+				parent = getParent( node ),
+				insertEl = this.getEl(),
+				body = editor.dom.getPos( editor.getBody() ),
+				iframe = DOM.getPos( editor.getContentAreaContainer().querySelector( 'iframe' ) ),
+				placeholder;
+
+			DOM.addClass( insert.getEl(), 'open' );
+
+			placeholder = dom.create( 'p', {
+				'data-mce-bogus': 'all',
+				'class': 'mce-insert-placeholder',
+				'style': 'height: 0px;'
+			}, '\u00a0' );
+
+			dom.insertAfter( placeholder, parent );
+
+			DOM.setStyles( insertEl, {
+				'left': iframe.x + body.x,
+				'top': iframe.y + editor.dom.getPos( placeholder ).y,
+				'width': editor.getBody().clientWidth,
+				'opacity': 0
+			} );
+
+			insertModal.show();
+
+			editor.dom.setStyles( placeholder, {
+				'height': insertEl.clientHeight
+			} );
+
+			jQuery( placeholder )
+				.hide()
+				.height( insertEl.clientHeight )
+				.slideDown( 'fast', function() {
+					// $( modal ).css( 'opacity', '' ).fadeIn();
+					DOM.setStyles( insertEl, {
+						'opacity': 1
+					} );
+
+					editor.execCommand( 'wpAutoResize' );
+				} );
+
+			return this;
+		};
+
+		insertModal.renderTo( document.body ).hide();
+	} );
+
+	function addBlock( object ) {
+		editor.blocks = editor.blocks || [];
+		object.icon = 'dashicons dashicons dashicons-' + object.icon;
+		object.type = 'button';
+		object.text = object.title;
+		object = tinymce.ui.Factory.create( object );
+		editor.blocks.push( object );
+	}
+
+	addBlock( {
+		title: 'Image',
+		icon: 'format-image',
+		onclick: function() {
+			var instance = wp.media.editor.open().setState( 'insert' );
+			jQuery( instance.el )
+				.find( 'select.attachment-filters' )
+				.val( 'image' )
+				.trigger( 'change' );
+		}
+	} );
+
+	addBlock( {
+		title: 'Gallery',
+		icon: 'format-gallery',
+		onclick: function() {
+			wp.media.editor.open().setState( 'gallery-library' );
+		}
+	} );
+
+	addBlock( {
+		title: 'Audio',
+		icon: 'format-audio',
+		onclick: function() {
+			var instance = wp.media.editor.open().setState( 'insert' );
+			jQuery( instance.el )
+				.find( 'select.attachment-filters' )
+				.val( 'audio' )
+				.trigger( 'change' );
+		}
+	} );
+
+	addBlock( {
+		title: 'Audio Playlist',
+		icon: 'playlist-audio',
+		onclick: function() {
+			wp.media.editor.open().setState( 'playlist' );
+		}
+	} );
+
+	addBlock( {
+		title: 'Video',
+		icon: 'video-alt3',
+		onclick: function() {
+			var instance = wp.media.editor.open().setState( 'insert' );
+			jQuery( instance.el )
+				.find( 'select.attachment-filters' )
+				.val( 'video' )
+				.trigger( 'change' );
+		}
+	} );
+
+	addBlock( {
+		title: 'Video Playlist',
+		icon: 'playlist-video',
+		onclick: function() {
+			wp.media.editor.open().setState( 'video-playlist' );
+		}
+	} );
+
+	addBlock( {
+		title: 'Block Quote',
+		icon: 'format-quote',
+		onclick: function() {
+			editor.execCommand( 'mceBlockQuote' );
+		}
+	} );
+
+	addBlock( {
+		title: 'List',
+		icon: 'editor-ul',
+		onclick: function() {
+			editor.execCommand( 'InsertUnorderedList' );
+		}
+	} );
+
+	addBlock( {
+		title: 'Table',
+		icon: 'screenoptions',
+		onclick: function() {}
+	} );
+
+	addBlock( {
+		title: 'Map',
+		icon: 'location-alt',
+		onclick: function() {
+			editor.insertContent( '[map]' );
+		}
+	} );
+
+	addBlock( {
+		title: 'Horizontal Rule',
+		icon: 'editor-insertmore',
+		onclick: function() {
+			editor.execCommand( 'InsertHorizontalRule' );
+		}
+	} );
+
+	addBlock( {
+		title: 'More...',
+		icon: 'editor-insertmore',
+		onclick: function() {
+			editor.execCommand( 'WP_More' );
+		}
+	} );
+
+	addBlock( {
+		title: 'Next Page',
+		icon: 'editor-insertmore',
+		onclick: function() {
+			editor.execCommand( 'WP_Page' );
+		}
+	} );
+
 	return {
-		removeElement: removeElement
+		addBlock: addBlock
 	};
 
 } );

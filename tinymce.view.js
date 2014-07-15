@@ -461,6 +461,7 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 		}
 
 		if ( keyCode === VK.ENTER ) {
+			event.stopImmediatePropagation();
 			event.preventDefault();
 		}
 	});

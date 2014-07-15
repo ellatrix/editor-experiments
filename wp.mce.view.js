@@ -1060,49 +1060,4 @@ window.wp = window.wp || {};
 		}
 	} );
 
-	wp.editor = wp.editor || {};
-	wp.editor.fade = wp.editor.fade || {};
-
-	wp.editor.fade.$postDivRich = $( '#postdivrich' );
-	wp.editor.fade.$out = $( 'div.wrap' ).children( 'h2' )
-		.add( '#wp-toolbar' )
-		.add( '#screen-meta-links' )
-		.add( '#wpfooter' )
-		.add( '#adminmenuwrap' )
-		.add( 'div.postbox' )
-		.add( 'div.updated' )
-		.add( 'div.error' );
-
-	wp.editor.fade.Out = function( event ) {
-		if ( ! event ) {
-			this.$postDivRich.off( '.hoverIntent' );
-		}
-
-		this.$in = this.$out.filter( ':visible' ).fadeTo( 'slow' , 0.1 );
-	};
-
-	wp.editor.fade.In = function( event ) {
-		var panels = $( '.mce-popover' ).add( '.mce-menu' ).add( '.wp-block-edit' );
-
-		if ( ! event ) {
-			this.auto();
-		}
-
-		if ( ! panels.length || ( panels.length && ! panels.is( ':visible' ) ) ) {
-			this.$in && this.$in.fadeTo( 'slow' , 1 );
-		}
-	};
-
-	wp.editor.fade.auto = function() {
-		this.$postDivRich.hoverIntent( {
-			over: this.Out,
-			out: this.In,
-			timeout: 500
-		} );
-	};
-
-	_.bindAll( wp.editor.fade, 'Out', 'In', 'auto' );
-
-	wp.editor.fade.auto();
-
 } )( jQuery );
