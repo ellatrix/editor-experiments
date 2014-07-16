@@ -154,7 +154,7 @@ window.wp = window.wp || {};
 			} );
 		},
 		/* jshint scripturl: true */
-		setSingleIframeContent: function( options, editor, node, callback ) {
+		setSingleIframeContent: function( html, editor, node, callback ) {
 			var MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver,
 				iframe, iframeDoc, i, resize, styles = '';
 
@@ -163,9 +163,10 @@ window.wp = window.wp || {};
 			editor.dom.setHTML( node, '' );
 
 			iframe = editor.dom.add( node, 'iframe', {
-				src: 'javascript:""',
+				src: tinymce.Env.ie ? 'javascript:""' : '',
 				frameBorder: '0',
 				allowTransparency: 'true',
+				scrolling: 'no',
 				style: {
 					width: '100%',
 					display: 'block'
@@ -174,21 +175,16 @@ window.wp = window.wp || {};
 
 			iframeDoc = iframe.contentWindow.document;
 
-			if ( options.styles ) {
-				_.each( options.styles, function( value ) {
-					styles += '<link type="text/css" rel="stylesheet" href="' + value + '" />';
-				} );
-			}
+			iframeDoc.open();
 
 			iframeDoc.write(
 				'<!DOCTYPE html>' +
 				'<html>' +
 					'<head>' +
 						'<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />' +
-						styles +
 					'</head>' +
-					'<body class="wp-core-ui">' +
-						( options.html ? options.html : '' ) +
+					'<body style="padding: 0; margin: 0;">' +
+						( html || '' ) +
 					'</body>' +
 				'</html>'
 			);
@@ -196,14 +192,14 @@ window.wp = window.wp || {};
 			iframeDoc.close();
 
 			resize = function() {
-				$( iframe ).height( $( iframeDoc ).height() );
+				$( iframe ).height( $( iframeDoc.body ).height() );
 			};
 
 			if ( MutationObserver ) {
 				new MutationObserver( _.debounce( function() {
 					resize();
 				}, 100 ) )
-				.observe( iframeDoc, {
+				.observe( iframeDoc.body, {
 					attributes: true,
 					childList: true,
 					subtree: true
@@ -221,9 +217,13 @@ window.wp = window.wp || {};
 		setIframeContent: function( html, callback ) {
 			var self = this;
 
-			this.getNodes( function( editor, node ) {
-				self.setSingleIframeContent( html, editor, node, callback );
-			} );
+			if ( html.indexOf( '<script' ) !== -1 ) {
+				this.getNodes( function( editor, node ) {
+					self.setSingleIframeContent( html, editor, node, callback );
+				} );
+			} else {
+				this.setContent( html, callback );
+			}
 		},
 		setError: function( message, dashicon ) {
 			this.setContent(
@@ -613,119 +613,121 @@ window.wp = window.wp || {};
 	} );
 
 	/**
-	 * These are base methods that are shared by each shortcode's MCE controller
+	 * These are base methods that are shared by the audio and video shortcode's MCE controller.
 	 *
 	 * @mixin
 	 */
-	wp.mce.av = _.extend( wp.media.mixin, {
+	wp.mce.av = {
 		loaded: false,
-		overlay: true,
-		edit: true,
 
-		initialize: function( options ) {
-			var self = this;
+		View: {
+			overlay: true,
 
-			this.players = [];
-			this.shortcode = options.shortcode;
-			_.bindAll( this, 'setPlayer', 'pausePlayers' );
-			$( this ).on( 'ready', this.setPlayer );
-			$( this ).on( 'ready', function( event, editor, node ) {
-				editor.on( 'hide', this.pausePlayers );
+			action: 'parse-media-shortcode',
 
-				$( node ).on( 'edit', function() {
-					var media = wp.media[ self.type ],
-						frame, callback;
+			initialize: function( options ) {
+				this.shortcode = options.shortcode;
+				this.fetching = false;
 
-					$( document ).trigger( 'media:edit' );
+				_.bindAll( this, 'setIframeContent', 'setNode', 'fetch' );
+				$( this ).on( 'ready', this.setNode );
+			},
 
-					frame = media.edit( window.decodeURIComponent( self.encodedText ) );
+			setNode: function () {
+				if ( this.parsed ) {
+					this.setIframeContent( this.parsed );
+				} else if ( ! this.fetching ) {
+					this.fetch();
+				}
+			},
 
-					frame.on( 'close', function() {
-						frame.detach();
-					} );
+			fetch: function () {
+				var self = this;
+				this.fetching = true;
 
-					callback = function( selection ) {
-						wp.mce.views.refreshView( self, wp.media[ self.type ].shortcode( selection ).string(), node );
-						frame.detach();
-					};
-
-					if ( _.isArray( self.state ) ) {
-						_.each( self.state, function ( state ) {
-							frame.state( state ).on( 'update', callback );
-						} );
-					} else {
-						frame.state( self.state ).on( 'update', callback );
+				wp.ajax.send( this.action, {
+					data: {
+						post_ID: $( '#post_ID' ).val() || 0,
+						type: this.shortcode.tag,
+						shortcode: this.shortcode.string()
 					}
+				} )
+				.always( function() {
+					self.fetching = false;
+				} )
+				.done( function( response ) {
+					if ( response ) {
+						self.parsed = response;
+						self.setIframeContent( response );
+					}
+				} )
+				.fail( function( response ) {
+					if ( response && response.message ) {
+						if ( ( response.type === 'not-embeddable' && self.type === 'embed' ) ||
+							response.type === 'not-ssl' ) {
 
-					frame.open();
+							self.setError( response.message, 'admin-media' );
+						} else {
+							self.setContent( '<p>' + self.original + '</p>', null, 'replace' );
+						}
+					} else if ( response && response.statusText ) {
+						self.setError( response.statusText, 'admin-media' );
+					}
 				} );
-			} );
-			$( document ).on( 'media:edit', this.pausePlayers );
+			},
+
+			/**
+			 * Pass data to the View's Underscore template and return the compiled output
+			 *
+			 * @returns {string}
+			 */
+			getHtml: function() {
+				if ( ! this.parsed ) {
+					return '';
+				}
+				return this.parsed;
+			}
 		},
 
 		/**
-		 * Creates the player instance for the current node
+		 * Called when a TinyMCE view is clicked for editing.
+		 * - Parses the shortcode out of the element's data attribute
+		 * - Calls the `edit` method on the shortcode model
+		 * - Launches the model window
+		 * - Bind's an `update` callback which updates the element's data attribute
+		 *   re-renders the view
 		 *
-		 * @global MediaElementPlayer
-		 *
-		 * @param {Event} event
-		 * @param {Object} editor
 		 * @param {HTMLElement} node
 		 */
-		setPlayer: function( event, editor, node ) {
-			var self = this,
-				media;
+		edit: function( node ) {
+			var media = wp.media[ this.type ],
+				self = this,
+				frame, data, callback;
 
-			media = $( node ).find( '.wp-' +  this.shortcode.tag + '-shortcode' );
+			$( document ).trigger( 'media:edit' );
 
-			if ( ! this.isCompatible( media ) ) {
-				media.closest( '.wpview-wrap' ).addClass( 'wont-play' );
-				media.replaceWith( '<p>' + media.find( 'source' ).eq( 0 ).prop( 'src' ) + '</p>' );
-				return;
-			} else {
-				media.closest( '.wpview-wrap' ).removeClass( 'wont-play' );
-				if ( this.ua.is( 'ff' ) ) {
-					media.prop( 'preload', 'metadata' );
-				} else {
-					media.prop( 'preload', 'none' );
-				}
-			}
-
-			media = wp.media.view.MediaDetails.prepareSrc( media.get( 0 ) );
-
-			setTimeout( function() {
-				self.loaded = true;
-				self.players.push( new MediaElementPlayer( media, self.mejsSettings ) );
-			}, this.loaded ? 10 : 500 );
-		},
-
-		/**
-		 * Pass data to the View's Underscore template and return the compiled output
-		 *
-		 * @returns {string}
-		 */
-		getHtml: function( attributes, content, tag ) {
-			attributes.content = content;
-
-			return this.template( {
-				model: _.defaults( attributes, wp.media[ tag ].defaults )
+			data = window.decodeURIComponent( $( node ).attr('data-wpview-text') );
+			frame = media.edit( data );
+			frame.on( 'close', function() {
+				frame.detach();
 			} );
-		},
 
-		unbind: function() {
-			this.unsetPlayers();
+			callback = function( selection ) {
+				var shortcode = wp.media[ self.type ].shortcode( selection ).string();
+				$( node ).attr( 'data-wpview-text', window.encodeURIComponent( shortcode ) );
+				wp.mce.views.refreshView( self, shortcode );
+				frame.detach();
+			};
+			if ( _.isArray( self.state ) ) {
+				_.each( self.state, function (state) {
+					frame.state( state ).on( 'update', callback );
+				} );
+			} else {
+				frame.state( self.state ).on( 'update', callback );
+			}
+			frame.open();
 		}
-	} );
-
-	/**
-	 * TinyMCE handler for the audio shortcode
-	 *
-	 * @mixes wp.mce.av
-	 */
-	wp.mce.views.register( 'audio', _.extend( {}, wp.mce.av, {
-		state: 'audio-details',
-		template: media.template( 'editor-audio' )
-	} ) );
+	};
 
 	/**
 	 * TinyMCE handler for the video shortcode
@@ -733,8 +735,16 @@ window.wp = window.wp || {};
 	 * @mixes wp.mce.av
 	 */
 	wp.mce.views.register( 'video', _.extend( {}, wp.mce.av, {
-		state: 'video-details',
-		template: media.template( 'editor-video' )
+		state: 'video-details'
+	} ) );
+
+	/**
+	 * TinyMCE handler for the audio shortcode
+	 *
+	 * @mixes wp.mce.av
+	 */
+	wp.mce.views.register( 'audio', _.extend( {}, wp.mce.av, {
+		state: 'audio-details'
 	} ) );
 
 	/**
@@ -743,233 +753,40 @@ window.wp = window.wp || {};
 	 * @mixes wp.mce.av
 	 */
 	wp.mce.views.register( 'playlist', _.extend( {}, wp.mce.av, {
-		state: ['playlist-edit', 'video-playlist-edit'],
-		template: media.template( 'editor-playlist' ),
-		overlay: true,
-
-		initialize: function( options ) {
-			this.players = [];
-			this.data = {};
-			this.attachments = [];
-			this.shortcode = options.shortcode;
-
-			$( this ).on( 'ready', function( event, editor ) {
-				editor.on( 'hide', this.pausePlayers );
-			} );
-			$( document ).on( 'media:edit', this.pausePlayers );
-
-			this.fetch();
-
-			$( this ).on( 'ready', this.setPlaylist );
-		},
-
-		/**
-		 * Asynchronously fetch the shortcode's attachments
-		 */
-		fetch: function() {
-			this.attachments = wp.media.playlist.attachments( this.shortcode );
-			this.dfd = this.attachments.more().done( _.bind( this.render, this ) );
-		},
-
-		setPlaylist: function( event, editor, element ) {
-			if ( ! this.data.tracks ) {
-				return;
-			}
-
-			this.players.push( new WPPlaylistView( {
-				el: $( element ).find( '.wp-playlist' ).get( 0 ),
-				metadata: this.data
-			} ).player );
-		},
-
-		/**
-		 * Set the data that will be used to compile the Underscore template,
-		 *  compile the template, and then return it.
-		 *
-		 * @returns {string}
-		 */
-		getHtml: function( attributes ) {
-			var model = wp.media.playlist,
-				options,
-				attachments,
-				tracks = [];
-
-			// Don't render errors while still fetching attachments
-			if ( this.dfd && 'pending' === this.dfd.state() && ! this.attachments.length ) {
-				return;
-			}
-
-			_.each( model.defaults, function( value, key ) {
-				attributes[ key ] = model.coerce( attributes, key );
-			} );
-
-			options = {
-				type: attributes.type,
-				style: attributes.style,
-				tracklist: attributes.tracklist,
-				tracknumbers: attributes.tracknumbers,
-				images: attributes.images,
-				artists: attributes.artists
-			};
-
-			if ( ! this.attachments.length ) {
-				return this.template( options );
-			}
-
-			attachments = this.attachments.toJSON();
-
-			_.each( attachments, function( attachment ) {
-				var size = {}, resize = {}, track = {
-					src : attachment.url,
-					type : attachment.mime,
-					title : attachment.title,
-					caption : attachment.caption,
-					description : attachment.description,
-					meta : attachment.meta
-				};
-
-				if ( 'video' === attributes.type ) {
-					size.width = attachment.width;
-					size.height = attachment.height;
-					if ( media.view.settings.contentWidth ) {
-						resize.width = media.view.settings.contentWidth - 22;
-						resize.height = Math.ceil( ( size.height * resize.width ) / size.width );
-						if ( ! options.width ) {
-							options.width = resize.width;
-							options.height = resize.height;
-						}
-					} else {
-						if ( ! options.width ) {
-							options.width = attachment.width;
-							options.height = attachment.height;
-						}
-					}
-					track.dimensions = {
-						original : size,
-						resized : _.isEmpty( resize ) ? size : resize
-					};
-				} else {
-					options.width = 400;
-				}
-
-				track.image = attachment.image;
-				track.thumb = attachment.thumb;
-
-				tracks.push( track );
-			} );
-
-			options.tracks = tracks;
-			this.data = options;
-
-			return this.template( options );
-		},
-
-		unbind: function() {
-			this.unsetPlayers();
-		}
+		state: [ 'playlist-edit', 'video-playlist-edit' ]
 	} ) );
 
 	/**
 	 * TinyMCE handler for the embed shortcode
 	 */
-	wp.mce.embedView = _.extend( {}, wp.media.mixin, {
-		overlay: true,
-		initialize: function( options ) {
-			this.players = [];
-			this.content = options.content;
-			this.fetching = false;
-			this.parsed = false;
-			this.original = options.url || options.shortcode.string();
-
-			if ( options.url ) {
-				this.shortcode = '[embed]' + options.url + '[/embed]';
-			} else {
-				this.shortcode = options.shortcode.string();
-			}
-
-			_.bindAll( this, 'setHtml', 'setNode', 'fetch' );
-			$( this ).on( 'ready', this.setNode );
-		},
-		unbind: function() {
-			var self = this;
-			_.each( this.players, function ( player ) {
-				player.pause();
-				self.removePlayer( player );
-			} );
-			this.players = [];
-		},
-		setNode: function () {
-			if ( this.parsed ) {
-				this.setHtml( this.parsed );
-				this.parseMediaShortcodes();
-			} else if ( ! this.fetching ) {
-				this.fetch();
-			}
-		},
-		fetch: function () {
-			var self = this;
-
-			this.fetching = true;
-
-			wp.ajax.send( 'parse-embed', {
-				data: {
-					post_ID: $( '#post_ID' ).val() || 0,
-					shortcode: this.shortcode
-				}
-			} )
-			.always( function() {
-				self.fetching = false;
-			} )
-			.done( function( response ) {
-				if ( response ) {
-					self.parsed = response;
-					self.setHtml( response );
-				}
-			} )
-			.fail( function( response ) {
-				if ( response && response.message ) {
-					if ( ( response.type === 'not-embeddable' && self.type === 'embed' ) ||
-						response.type === 'not-ssl' ) {
-
-						self.setError( response.message, 'admin-media' );
-					} else {
-						self.setContent( '<p>' + self.original + '</p>', null, 'replace' );
-					}
-				} else if ( response && response.statusText ) {
-					self.setError( response.statusText, 'admin-media' );
-				}
-			} );
-		},
-		setHtml: function ( content ) {
-			if ( content.indexOf( '<script' ) !== -1 ) {
-				this.setIframeContent( {
-					html: content
-				} );
-			} else {
-				this.setContent( content );
-			}
-
-			this.parseMediaShortcodes();
-		},
-		parseMediaShortcodes: function () {
-			var self = this;
-			$( '.wp-audio-shortcode, .wp-video-shortcode', this.node ).each( function ( i, element ) {
-				self.players.push( new MediaElementPlayer( element, self.mejsSettings ) );
-			} );
-		},
-		getHtml: function() {
-			return '';
-		}
-	} );
-
 	wp.mce.embedMixin = {
-		View: wp.mce.embedView,
+		View: _.extend( {}, wp.mce.av.View, {
+			overlay: true,
+			action: 'parse-embed',
+			initialize: function( options ) {
+				this.content = options.content;
+				this.fetching = false;
+				this.parsed = false;
+				this.original = options.url || options.shortcode.string();
+
+				if ( options.url ) {
+					this.shortcode = media.embed.shortcode( {
+						url: options.url
+					} );
+				} else {
+					this.shortcode = options.shortcode;
+				}
+
+				_.bindAll( this, 'setIframeContent', 'setNode', 'fetch' );
+				$( this ).on( 'ready', this.setNode );
+			}
+		} ),
 		edit: function( node ) {
 			var embed = media.embed,
 				self = this,
 				frame,
 				data,
-				isURL = 'embedURL' === this.shortcode;
+				isURL = 'embedURL' === this.type;
 
 			$( document ).trigger( 'media:edit' );
 
