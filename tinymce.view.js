@@ -1,4 +1,5 @@
 /* global tinymce */
+
 /**
  * WordPress View plugin.
  */
@@ -9,7 +10,8 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 		TreeWalker = tinymce.dom.TreeWalker,
 		toRemove = false,
 		firstFocus = true,
-		cursorInterval, lastKeyDownNode, setViewCursorTries, focus;
+		_noop = function() { return false; },
+		cursorInterval, lastKeyDownNode, setViewCursorTries, focus, execCommandView;
 
 	function getView( node ) {
 		return getParent( node, 'wpview-wrap' );
@@ -21,7 +23,7 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 	 */
 	function getParent( node, className ) {
 		while ( node && node.parentNode ) {
-			if ( node.className && (' ' + node.className + ' ').indexOf(' ' + className + ' ') !== -1 ) {
+			if ( node.className && ( ' ' + node.className + ' ' ).indexOf( ' ' + className + ' ' ) !== -1 ) {
 				return node;
 			}
 
@@ -156,7 +158,11 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 
 	// Check if the `wp.mce` API exists.
 	if ( typeof wp === 'undefined' || ! wp.mce ) {
-		return;
+		return {
+			getViewText: _noop,
+			setViewText: _noop,
+			getView: _noop
+		};
 	}
 
 	// Remove the content of view wrappers from HTML string
@@ -268,22 +274,6 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 			selection.collapse( true );
 		});
 
-		// When the selection's content changes, scan any new content for matching views.
-		// Runs on paste and on inserting nodes/html.
-		editor.on( 'SetContent', function( e ) {
-			if ( ! e.context ) {
-				return;
-			}
-
-			var node = selection.getNode();
-
-			if ( ! node.innerHTML ) {
-				return;
-			}
-
-			node.innerHTML = wp.mce.views.toViews( node.innerHTML );
-		});
-
 		editor.dom.bind( editor.getBody().parentNode, 'mousedown mouseup click', function( event ) {
 			var view = getView( event.target ),
 				deselectEventType;
@@ -331,14 +321,9 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 	});
 
 	editor.on( 'PreProcess', function( event ) {
-		// Replace the wpview node with the wpview string/shortcode?
+		// Empty the wpview wrap nodes
 		tinymce.each( editor.dom.select( 'div[data-wpview-text]', event.node ), function( node ) {
-			// Empty the wrap node
-			if ( 'textContent' in node ) {
-				node.textContent = '\u00a0';
-			} else {
-				node.innerText = '\u00a0';
-			}
+			node.textContent = node.innerText = '\u00a0';
 		});
     });
 
@@ -461,7 +446,6 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 		}
 
 		if ( keyCode === VK.ENTER ) {
-			event.stopImmediatePropagation();
 			event.preventDefault();
 		}
 	});
@@ -589,7 +573,7 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 		editor.dom.removeClass( editor.getBody(), 'has-focus' );
 	} );
 
-	editor.on( 'nodechange', function( event ) {
+	editor.on( 'NodeChange', function( event ) {
 		var dom = editor.dom,
 			views = editor.dom.select( '.wpview-wrap' ),
 			className = event.element.className,
@@ -606,7 +590,7 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 
 		if ( focus ) {
 			if ( view ) {
-				if ( className === 'wpview-selection-before' || className === 'wpview-selection-after' && editor.selection.isCollapsed() ) {
+				if ( ( className === 'wpview-selection-before' || className === 'wpview-selection-after' ) && editor.selection.isCollapsed() ) {
 					setViewCursorTries = 0;
 
 					deselect();
@@ -643,7 +627,38 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 		}
 	});
 
-	editor.on( 'resolvename', function( event ) {
+	editor.on( 'BeforeExecCommand', function() {
+		var node = editor.selection.getNode(),
+			view;
+
+		if ( node && ( node.className === 'wpview-selection-before' || node.className === 'wpview-selection-after' ) && ( view = getView( node ) ) ) {
+			handleEnter( view );
+			execCommandView = view;
+		}
+	});
+
+	editor.on( 'ExecCommand', function() {
+		var toSelect, node;
+
+		if ( selected ) {
+			toSelect = selected;
+			deselect();
+			select( toSelect );
+		}
+
+		if ( execCommandView ) {
+			node = execCommandView.nextSibling;
+
+			if ( node && node.nodeName === 'P' && editor.dom.isEmpty( node ) ) {
+				editor.dom.remove( node );
+				setViewCursor( false, execCommandView );
+			}
+
+			execCommandView = false;
+		}
+	});
+
+	editor.on( 'ResolveName', function( event ) {
 		if ( editor.dom.hasClass( event.target, 'wpview-wrap' ) ) {
 			event.name = editor.dom.getAttrib( event.target, 'data-wpview-type' ) || 'wpview';
 			event.stopPropagation();
