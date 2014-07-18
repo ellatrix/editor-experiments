@@ -48,7 +48,7 @@ tinymce.PluginManager.add( 'title', function( editor ) {
 		} else if ( event.keyCode === VK.ENTER ) {
 			title = dummyTitle();
 
-			if ( title = selection.getNode() ) {
+			if ( title === selection.getNode() ) {
 				padNode = dom.create( 'p' );
 
 				if ( ! ( Env.ie && Env.ie < 11 ) ) {
