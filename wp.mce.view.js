@@ -1,4 +1,4 @@
-/* global tinymce, MediaElementPlayer, WPPlaylistView */
+/* global tinymce */
 
 /**
  * Note: this API is "experimental" meaning that it will probably change
@@ -48,181 +48,148 @@ window.wp = window.wp || {};
 
 	_.extend( wp.mce.View.prototype, {
 		initialize: function() {},
-		getHtml: function() {},
-		content: function() {},
+		getHtml: function() {
+			return '';
+		},
+		loadingPlaceholder: function() {
+			return '' +
+				'<div class="loading-placeholder">' +
+					'<div class="dashicons dashicons-admin-media"></div>' +
+					'<div class="wpview-loading"><ins></ins></div>' +
+				'</div>';
+		},
 		render: function() {
-			var self = this,
-				html = this.getHtml.apply( this, _.values( this.options ) ) || '';
-
-			this.setWrap(
+			this.setContent(
 				'<p class="wpview-selection-before">\u00a0</p>' +
 				'<div class="wpview-body" contenteditable="false">' +
 					'<div class="toolbar">' +
-						( this.edit ? '<div class="dashicons dashicons-edit edit"></div>' : '' ) +
+						( this.edit || views[ this.type ].edit ? '<div class="dashicons dashicons-edit edit"></div>' : '' ) +
 						'<div class="dashicons dashicons-trash remove"></div>' +
 					'</div>' +
 					'<div class="wpview-edit-placeholder" style="height:200px;display:none;"></div>' +
 					'<div class="wpview-content wpview-type-' + this.type + '">' +
-						html +
+						( this.getHtml() || this.loadingPlaceholder() ) +
 					'</div>' +
 					( this.overlay ? '<div class="wpview-overlay"></div>' : '' ) +
 				'</div>' +
 				'<p class="wpview-selection-after">\u00a0</p>',
-				function( editor, node ) {
-					$( self ).trigger( 'ready', [ editor, node, $( node ).find( '.wpview-content' )[0] ] );
-				}
+				'wrap'
 			);
-		},
-		formToShortcode: function( attributes ) {
-			var text, defs, validKeys;
-			if ( this.settings.attributes ) {
-				defs = _.clone( this.settings.attributes );
-				validKeys = [];
-				_.each( defs, function( object, attribute ) {
-					defs[ attribute ] = object.defaults;
-					validKeys.push( attribute );
-				} );
-				attributes = _.defaults( attributes, defs );
-				attributes = _.pick( attributes, validKeys );
-			}
-			text = '[' + this.type;
-			_.each( attributes, function( value, key ) {
-				text += ' ' + key + '="' + value + '"';
-			} );
-			text += ']';
 
-			return text;
+			$( this ).trigger( 'ready' );
 		},
 		unbind: function() {},
-		getNodes: function( callback ) {
-			var nodes = [];
+		getEditors: function( callback ) {
+			var editors = [];
 
 			_.each( tinymce.editors, function( editor ) {
 				if ( editor.plugins.wpview ) {
-					$( editor.getBody() )
-					.find( '[data-wpview-text="' + this.encodedText + '"]' )
-					.each( function ( i, node ) {
-						if ( callback ) {
-							callback( editor, node );
-						}
+					if ( callback ) {
+						callback( editor );
+					}
 
-						nodes.push( node );
-					} );
+					editors.push( editor );
 				}
 			}, this );
 
+			return editors;
+		},
+		getNodes: function( callback ) {
+			var nodes = [],
+				self = this;
+
+			this.getEditors( function( editor ) {
+				$( editor.getBody() )
+				.find( '[data-wpview-text="' + self.encodedText + '"]' )
+				.each( function ( i, node ) {
+					if ( callback ) {
+						callback( editor, node, $( node ).find( '.wpview-content' ).get( 0 ) );
+					}
+
+					nodes.push( node );
+				} );
+			} );
+
 			return nodes;
 		},
-		setSingleWrap: function( html, editor, node, callback ) {
-			if ( _.isString( html ) ) {
-				editor.dom.setHTML( node, html );
-			} else {
-				editor.dom.setHTML( node, '' );
-				node.appendChild( html );
-			}
+		setContent: function( html, option ) {
+			this.getNodes( function ( editor, node, content ) {
+				var el = ( option === 'wrap' || option === 'replace' ) ? node : content,
+					insert = html;
 
-			if ( callback ) {
-				callback( editor, node );
-			}
-		},
-		setWrap: function( html, callback ) {
-			var self = this;
+				if ( _.isString( insert ) ) {
+					insert = editor.dom.createFragment( insert );
+				}
 
-			this.getNodes( function( editor, node ) {
-				self.setSingleWrap( html, editor, node, callback );
-			} );
-		},
-		setSingleContent: function( html, editor, node, callback ) {
-			this.setSingleWrap( html, editor, $( node ).find( '.wpview-content' )[0], callback );
-		},
-		setContent: function( html, callback ) {
-			var self = this;
-
-			this.getNodes( function( editor, node ) {
-				self.setSingleContent( html, editor, node, callback );
-			} );
-		},
-		replace: function( html, callback ) {
-			this.getNodes( function( editor, node ) {
-				node = ( _.isString( html ) ? editor.dom.createFragment( html ) : html );
-
-				editor.dom.replace( node );
-
-				if ( callback ) {
-					callback( editor, node );
+				if ( option === 'replace' ) {
+					editor.dom.replace( insert, el );
+				} else {
+					el.innerHTML = '';
+					el.appendChild( insert );
 				}
 			} );
 		},
 		/* jshint scripturl: true */
-		setSingleIframeContent: function( html, editor, node, callback ) {
-			var MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver,
-				iframe, iframeDoc, i, resize, styles = '';
-
-			node = $( node ).find( '.wpview-content' )[0];
-
-			editor.dom.setHTML( node, '' );
-
-			iframe = editor.dom.add( node, 'iframe', {
-				src: tinymce.Env.ie ? 'javascript:""' : '',
-				frameBorder: '0',
-				allowTransparency: 'true',
-				scrolling: 'no',
-				style: {
-					width: '100%',
-					display: 'block'
-				}
-			} );
-
-			iframeDoc = iframe.contentWindow.document;
-
-			iframeDoc.open();
-
-			iframeDoc.write(
-				'<!DOCTYPE html>' +
-				'<html>' +
-					'<head>' +
-						'<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />' +
-					'</head>' +
-					'<body style="padding: 0; margin: 0;">' +
-						( html || '' ) +
-					'</body>' +
-				'</html>'
-			);
-
-			iframeDoc.close();
-
-			resize = function() {
-				$( iframe ).height( $( iframeDoc.body ).height() );
-			};
-
-			if ( MutationObserver ) {
-				new MutationObserver( _.debounce( function() {
-					resize();
-				}, 100 ) )
-				.observe( iframeDoc.body, {
-					attributes: true,
-					childList: true,
-					subtree: true
-				} );
-			} else {
-				for ( i = 1; i < 6; i++ ) {
-					setTimeout( resize, i * 700 );
-				}
-			}
-
-			if ( callback ) {
-				callback( editor, node, iframe );
-			}
-		},
-		setIframeContent: function( html, callback ) {
-			var self = this;
+		setIframes: function ( html ) {
+			var MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
 
 			if ( html.indexOf( '<script' ) !== -1 ) {
-				this.getNodes( function( editor, node ) {
-					self.setSingleIframeContent( html, editor, node, callback );
-				} );
+				this.getNodes( function ( editor, node, content ) {
+					var dom = editor.dom,
+						iframe, iframeDoc, i, resize;
+
+					content.innerHTML = '';
+
+					iframe = dom.add( content, 'iframe', {
+						src: tinymce.Env.ie ? 'javascript:""' : '',
+						frameBorder: '0',
+						allowTransparency: 'true',
+						scrolling: 'no',
+						'class': 'wpview-sandbox',
+						style: {
+							width: '100%',
+							display: 'block'
+						}
+					} );
+
+					iframeDoc = iframe.contentWindow.document;
+
+					iframeDoc.open();
+					iframeDoc.write(
+						'<!DOCTYPE html>' +
+						'<html>' +
+							'<head>' +
+								'<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />' +
+							'</head>' +
+							'<body data-context="iframe-sandbox" style="padding: 0; margin: 0;" class="' + editor.getBody().className + '">' +
+								html +
+							'</body>' +
+						'</html>'
+					);
+					iframeDoc.close();
+
+					resize = function() {
+						// Make sure the iframe still exists.
+						iframe.contentWindow && $( iframe ).height( $( iframeDoc.body ).height() );
+					};
+
+					if ( MutationObserver ) {
+						new MutationObserver( _.debounce( function() {
+							resize();
+						}, 100 ) )
+						.observe( iframeDoc.body, {
+							attributes: true,
+							childList: true,
+							subtree: true
+						} );
+					} else {
+						for ( i = 1; i < 6; i++ ) {
+							setTimeout( resize, i * 700 );
+						}
+					}
+				});
 			} else {
-				this.setContent( html, callback );
+				this.setContent( html );
 			}
 		},
 		setError: function( message, dashicon ) {
@@ -333,6 +300,26 @@ window.wp = window.wp || {};
 				$template: $template,
 				modal: modal
 			};
+		},
+		formToShortcode: function( attributes ) {
+			var text, defs, validKeys;
+			if ( this.settings.attributes ) {
+				defs = _.clone( this.settings.attributes );
+				validKeys = [];
+				_.each( defs, function( object, attribute ) {
+					defs[ attribute ] = object.defaults;
+					validKeys.push( attribute );
+				} );
+				attributes = _.defaults( attributes, defs );
+				attributes = _.pick( attributes, validKeys );
+			}
+			text = '[' + this.type;
+			_.each( attributes, function( value, key ) {
+				text += ' ' + key + '="' + value + '"';
+			} );
+			text += ']';
+
+			return text;
 		}
 	} );
 
@@ -558,17 +545,23 @@ window.wp = window.wp || {};
 		} );
 	};
 
-	wp.mce.views.edit = function() {};
+	wp.mce.views.edit = function( node ) {
+		var view = wp.mce.views.get( $( node ).data('wpview-type') );
+
+		if ( view && view.edit ) {
+			view.edit( node );
+		}
+	};
 
 	wp.mce.views.register( 'gallery', {
-		edit: true,
+		edit: function() {},
 		template: media.template( 'editor-gallery' ),
 		postID: $( '#post_ID' ).val(),
 
 		initialize: function() {
 			var self = this;
 
-			$( this ).on( 'ready', function( event, editor, node ) {
+			$( this ).on( 'ready', function() {
 				self.attachments = wp.media.gallery.attachments( self.shortcode, self.postID );
 				self.attachments.more().done( function() {
 					var attachments = false,
@@ -596,15 +589,17 @@ window.wp = window.wp || {};
 
 					self.setContent( self.template( options ) );
 
-					$( node ).on( 'edit', function() {
-						var gallery = wp.media.gallery,
-							frame;
+					self.getNodes( function( editor, node ) {
+						$( node ).on( 'edit', function() {
+							var gallery = wp.media.gallery,
+								frame;
 
-						frame = gallery.edit( window.decodeURIComponent( self.encodedText ) );
+							frame = gallery.edit( window.decodeURIComponent( self.encodedText ) );
 
-						frame.state( 'gallery-edit' ).on( 'update', function( selection ) {
-							wp.mce.views.refreshView( self, gallery.shortcode( selection ).string(), node );
-							frame.detach();
+							frame.state( 'gallery-edit' ).on( 'update', function( selection ) {
+								wp.mce.views.refreshView( self, gallery.shortcode( selection ).string(), node );
+								frame.detach();
+							} );
 						} );
 					} );
 				} );
@@ -618,32 +613,36 @@ window.wp = window.wp || {};
 	 * @mixin
 	 */
 	wp.mce.av = {
-		loaded: false,
-
 		View: {
 			overlay: true,
 
 			action: 'parse-media-shortcode',
 
 			initialize: function( options ) {
-				this.shortcode = options.shortcode;
-				this.fetching = false;
+				var self = this;
 
-				_.bindAll( this, 'setIframeContent', 'setNode', 'fetch' );
-				$( this ).on( 'ready', this.setNode );
+				this.shortcode = options.shortcode;
+
+				_.bindAll( this, 'setIframes', 'setNodes', 'fetch', 'pausePlayers' );
+				$( this ).on( 'ready', this.setNodes );
+
+				$( document ).on( 'media:edit', this.pausePlayers );
+
+				this.fetch();
+
+				this.getEditors( function( editor ) {
+					editor.on( 'hide', self.pausePlayers );
+				});
 			},
 
-			setNode: function () {
+			setNodes: function () {
 				if ( this.parsed ) {
-					this.setIframeContent( this.parsed );
-				} else if ( ! this.fetching ) {
-					this.fetch();
+					this.setIframes( this.parsed );
 				}
 			},
 
 			fetch: function () {
 				var self = this;
-				this.fetching = true;
 
 				wp.ajax.send( this.action, {
 					data: {
@@ -652,13 +651,10 @@ window.wp = window.wp || {};
 						shortcode: this.shortcode.string()
 					}
 				} )
-				.always( function() {
-					self.fetching = false;
-				} )
 				.done( function( response ) {
 					if ( response ) {
 						self.parsed = response;
-						self.setIframeContent( response );
+						self.setIframes( response );
 					}
 				} )
 				.fail( function( response ) {
@@ -668,7 +664,7 @@ window.wp = window.wp || {};
 
 							self.setError( response.message, 'admin-media' );
 						} else {
-							self.setContent( '<p>' + self.original + '</p>', null, 'replace' );
+							self.setContent( '<p>' + self.original + '</p>', 'replace' );
 						}
 					} else if ( response && response.statusText ) {
 						self.setError( response.statusText, 'admin-media' );
@@ -676,16 +672,35 @@ window.wp = window.wp || {};
 				} );
 			},
 
-			/**
-			 * Pass data to the View's Underscore template and return the compiled output
-			 *
-			 * @returns {string}
-			 */
-			getHtml: function() {
-				if ( ! this.parsed ) {
-					return '';
-				}
-				return this.parsed;
+			pausePlayers: function() {
+				this.getNodes( function( editor, node, content ) {
+					var p, win,
+						iframe = $( 'iframe.wpview-sandbox', content ).get(0);
+
+					if ( iframe && ( win = iframe.contentWindow ) && win.mejs ) {
+						for ( p in win.mejs.players ) {
+							win.mejs.players[p].pause();
+						}
+					}
+				});
+			},
+
+			unsetPlayers: function() {
+				this.getNodes( function( editor, node, content ) {
+					var p, win,
+						iframe = $( 'iframe.wpview-sandbox', content ).get(0);
+
+					if ( iframe && ( win = iframe.contentWindow ) && win.mejs ) {
+						for ( p in win.mejs.players ) {
+							win.mejs.players[p].remove();
+						}
+					}
+				});
+			},
+
+			unbind: function() {
+				this.pausePlayers();
+				this.unsetPlayers();
 			}
 		},
 
@@ -765,8 +780,6 @@ window.wp = window.wp || {};
 			action: 'parse-embed',
 			initialize: function( options ) {
 				this.content = options.content;
-				this.fetching = false;
-				this.parsed = false;
 				this.original = options.url || options.shortcode.string();
 
 				if ( options.url ) {
@@ -777,8 +790,10 @@ window.wp = window.wp || {};
 					this.shortcode = options.shortcode;
 				}
 
-				_.bindAll( this, 'setIframeContent', 'setNode', 'fetch' );
-				$( this ).on( 'ready', this.setNode );
+				_.bindAll( this, 'setIframes', 'setNodes', 'fetch' );
+				$( this ).on( 'ready', this.setNodes );
+
+				this.fetch();
 			}
 		} ),
 		edit: function( node ) {
@@ -837,44 +852,5 @@ window.wp = window.wp || {};
 			};
 		}
 	} ) );
-
-	wp.mce.views.register( 'more', {
-		toView: function( content ) {
-			var re = /<!--(more|nextpage)(.*?)-->/g,
-				match = re.exec( content );
-
-			if ( ! match ) {
-				return;
-			}
-
-			return {
-				index: match.index,
-				content: match[0],
-				options: {
-					_type: match[1],
-					text: tinymce.trim( match[2] )
-				}
-			};
-		},
-		View: {
-			initialize: function( options ) {
-				this.text = options.text;
-				this._type = options._type;
-			},
-			getHtml: function() {
-				var text;
-
-				if ( this._type === 'nextpage' ) {
-					text = 'Page Break';
-				} else if ( this.text ) {
-					text = this.text;
-				} else {
-					text = '(more&hellip;)';
-				}
-
-				return '<p><span>' + text + '</span></p>';
-			}
-		}
-	} );
 
 } )( jQuery );
