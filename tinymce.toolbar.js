@@ -6,21 +6,30 @@ tinymce.PluginManager.add( 'toolbar', function( editor ) {
 		dom = tinymce.DOM,
 		toolbar;
 
-	editor.on( 'nodechange', function( event ) {
-		if ( ! editor.selection.isCollapsed() &&
-				editor.selection.getContent().replace( /<[^>]+>/g, '' ).trim() &&
-				event.element.nodeName !== 'IMG' &&
-				event.element.nodeName !== 'HR' &&
-				event.element.id !== 'wp-title' &&
-				! editor.wp.getView( event.element ) ) {
-			if ( toolbar._visible ) {
-				toolbar.setPos();
-			} else {
-				toolbar.show();
-			}
-		} else {
+	editor.on( 'keyup mouseup', function() {
+		if ( editor.selection.isCollapsed() ) {
 			toolbar.hide();
+			return;
 		}
+
+		setTimeout( function() {
+			var element = editor.selection.getNode();
+
+			if ( ! editor.selection.isCollapsed() &&
+					editor.selection.getContent().replace( /<[^>]+>/g, '' ).trim() &&
+					element.nodeName !== 'IMG' &&
+					element.nodeName !== 'HR' &&
+					element.id !== 'wp-title' &&
+					! editor.wp.getView( element ) ) {
+				if ( toolbar._visible ) {
+					toolbar.setPos();
+				} else {
+					toolbar.show();
+				}
+			} else {
+				toolbar.hide();
+			}
+		}, 50 );
 	} );
 
 	editor.on( 'blur', function() {
