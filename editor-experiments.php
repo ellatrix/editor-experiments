@@ -100,7 +100,7 @@ if ( ! class_exists( 'Editor_Experiments' ) ) {
 		function admin_enqueue_scripts() {
 			wp_deregister_script( 'mce-view' );
 			wp_deregister_script( 'wp-fullscreen' );
-			wp_register_script( 'mce-view', plugins_url( 'wp.mce.view.js', __FILE__ ), array( 'shortcode', 'media-models', 'media-audiovideo', 'wp-playlist' ), false, true );
+			wp_register_script( 'mce-view', plugins_url( 'wp.mce.view.js', __FILE__ ), array( 'shortcode', 'media-models', 'media-audiovideo', 'wp-playlist', 'jquery-serialize-object' ), false, true );
 			wp_register_script( 'wp-fullscreen', plugins_url( 'wp.editor.fullscreen.js', __FILE__ ), array( 'jquery' ), false, true );
 		}
 

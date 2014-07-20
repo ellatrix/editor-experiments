@@ -265,22 +265,6 @@ window.wp = window.wp || {};
 
 			editor.on( 'nodechange', function( event ) {
 				if ( event.element !== $view.find( '.wpview-clipboard' )[0] ) {
-					$.fn.serializeObject = function() {
-						var object = {},
-							array = this.serializeArray();
-						$.each( array, function() {
-							if ( object[ this.name ] !== undefined ) {
-								if ( ! object[ this.name ].push ) {
-									object[ this.name ] = [ object[ this.name ] ];
-								}
-								object[ this.name ].push( this.value || '' );
-							} else {
-								object[ this.name ] = this.value || '';
-							}
-						} );
-						return object;
-					};
-
 					if ( $template && $template.length ) {
 						wp.mce.views.refreshView( self, self.formToShortcode( $template.serializeObject() ), $view[0], true );
 						editor.undoManager.add();
