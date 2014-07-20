@@ -250,6 +250,10 @@ window.wp = window.wp || {};
 				}, 100 );
 			} );
 
+			$( '#post' ).submit( function() {
+				wp.mce.views.refreshView( self, self.formToShortcode( $template.serializeObject() ), $view[0], true );
+			} );
+
 			$view.on( 'select', function() {
 				var editorBody = editor.getBody(),
 					editorIframeOffset = $( editor.getContentAreaContainer().getElementsByTagName( 'iframe' ) ).offset();
@@ -270,10 +274,8 @@ window.wp = window.wp || {};
 
 			editor.on( 'nodechange', function( event ) {
 				if ( event.element !== $view.find( '.wpview-clipboard' )[0] ) {
-					if ( $template && $template.length ) {
-						wp.mce.views.refreshView( self, self.formToShortcode( $template.serializeObject() ), $view[0], true );
-						editor.undoManager.add();
-					}
+					wp.mce.views.refreshView( self, self.formToShortcode( $template.serializeObject() ), $view[0], true );
+					editor.undoManager.add();
 
 					$modal.hide();
 					$viewEditPlaceholder.hide();
