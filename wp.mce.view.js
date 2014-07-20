@@ -203,8 +203,9 @@ window.wp = window.wp || {};
 		inlineControls: function( arg ) {
 			var self = this,
 				attributes = this.shortcode.attrs.named,
-				modal, $template, input = {}, firstInput,
+				modal, $modal, $template, input = {}, firstInput,
 				$view = $( arg.viewNode ),
+				$viewEditPlaceholder = $view.find( '.wpview-edit-placeholder' ),
 				editor = arg.editor;
 
 			modal = document.createElement( 'DIV' );
@@ -212,11 +213,12 @@ window.wp = window.wp || {};
 
 			document.body.appendChild( modal );
 
+			$modal = $( modal );
 			$template = $( $.trim( arg.template() ) );
 
 			modal.appendChild( $template[0] );
 
-			$( modal ).hide();
+			$modal.hide();
 
 			$template
 			.find( 'input' )
@@ -224,7 +226,7 @@ window.wp = window.wp || {};
 			.add( $template.find( 'textarea' ) )
 			.each( function() {
 				var $this = $( this ),
-					name = $( this ).attr( 'name' );
+					name = $this.attr( 'name' );
 
 				if ( ! firstInput && $this.attr('type') !== 'hidden' ) {
 					firstInput = $this;
@@ -241,25 +243,28 @@ window.wp = window.wp || {};
 						}
 					}
 				}
+			} )
+			.blur( function() {
+				setTimeout( function() {
+					editor.focus();
+				}, 100 );
 			} );
 
 			$view.on( 'select', function() {
 				var editorBody = editor.getBody(),
 					editorIframeOffset = $( editor.getContentAreaContainer().getElementsByTagName( 'iframe' ) ).offset();
 
-				$( modal ).css( {
+				$modal.css( {
 					opacity: 0,
 					top: editorIframeOffset.top + editor.dom.getPos( $view[0] ).y,
 					left: editorIframeOffset.left + editor.dom.getPos( editorBody ).x,
 					width: editorBody.offsetWidth
 				} );
 
-				$view
-				.find( '.wpview-edit-placeholder' )
-				.height( $( modal ).outerHeight() + 5 )
+				$viewEditPlaceholder
+				.height( $modal.outerHeight() + 5 )
 				.slideDown( 'fast', function() {
-					firstInput && firstInput.focus();
-					$( modal ).css( 'opacity', '' ).fadeIn();
+					$modal.css( 'opacity', '' ).fadeIn();
 				} );
 			} );
 
@@ -270,13 +275,13 @@ window.wp = window.wp || {};
 						editor.undoManager.add();
 					}
 
-					$( modal ).hide();
-					$view.find( '.wpview-edit-placeholder' ).hide();
+					$modal.hide();
+					$viewEditPlaceholder.hide();
 				}
 			} );
 
 			$view.on( 'deselect', function() {
-				$view.find( '.wpview-edit-placeholder' ).slideUp();
+				$viewEditPlaceholder.slideUp();
 			} );
 
 			return {
