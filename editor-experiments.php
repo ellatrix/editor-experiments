@@ -44,21 +44,11 @@ if ( ! class_exists( 'Editor_Experiments' ) ) {
 		}
 
 		function tiny_mce_plugins( $plugins ) {
-			$to_remove = array_keys( $plugins, 'wpview' );
-			$to_remove = array_merge( $to_remove, array_keys( $plugins, 'wordpress' ) );
-			$to_remove = array_merge( $to_remove, array_keys( $plugins, 'wpfullscreen' ) );
-
-			foreach( $to_remove as $plugin ) {
-			    unset( $plugins[$plugin] );
-			}
-
-			return $plugins;
+			return array_diff( $plugins, array( 'wordpress', 'wpfullscreen', 'wpview' ) );
 		}
 
 		function mce_external_plugins( $plugins ) {
 			$plugins['wpview'] = plugins_url( 'tinymce.view.js', __FILE__ );
-			$plugins['wpeditimage'] = plugins_url( 'tinymce.image.js', __FILE__ );
-			$plugins['wpgallery'] = plugins_url( 'tinymce.gallery.js', __FILE__ );
 			$plugins['general'] = plugins_url( 'tinymce.general.js', __FILE__ );
 			$plugins['insert'] = plugins_url( 'tinymce.insert.js', __FILE__ );
 			$plugins['toolbar'] = plugins_url( 'tinymce.toolbar.js', __FILE__ );

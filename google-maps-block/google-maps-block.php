@@ -53,7 +53,7 @@ function google_map_block_print_media_templates() {
 function google_maps_block_callback( $attributes, $content, $tag ) {
 	$out = '<div class="map"';
 	foreach ( $attributes as $attribute => $value ) {
-		$out .= ' data-' . $attribute . '="' . $value . '"';
+		$out .= ' data-' . esc_html( $attribute ) . '="' . esc_attr( $value ) . '"';
 	}
 	return $out . '></div><style type="text/css">.map img { max-width: none; }</style>';
 }
