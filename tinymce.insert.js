@@ -224,28 +224,6 @@ tinymce.PluginManager.add( 'insert', function( editor ) {
 	} );
 
 	addBlock( {
-		title: 'Block Quote',
-		icon: 'format-quote',
-		onclick: function() {
-			editor.execCommand( 'mceBlockQuote' );
-		}
-	} );
-
-	addBlock( {
-		title: 'List',
-		icon: 'editor-ul',
-		onclick: function() {
-			editor.execCommand( 'InsertUnorderedList' );
-		}
-	} );
-
-	addBlock( {
-		title: 'Table',
-		icon: 'screenoptions',
-		onclick: function() {}
-	} );
-
-	addBlock( {
 		title: 'Map',
 		icon: 'location-alt',
 		onclick: function() {
