@@ -15,7 +15,7 @@ License URI: http://www.gnu.org/licenses/gpl-2.0.html
 if ( ! class_exists( 'Editor_Experiments' ) ) {
 
 	class Editor_Experiments {
-		const WP_VERSION = '4.0-beta1-src';
+		const WP_VERSION = '4.0-beta3-29445-src';
 
 		function __construct() {
 			if ( is_admin() ) {
