@@ -45,8 +45,6 @@ if ( ! class_exists( 'Editor_Experiments' ) ) {
 
 		function tiny_mce_plugins( $plugins ) {
 			$to_remove = array_keys( $plugins, 'wpview' );
-			$to_remove = array_merge( $to_remove, array_keys( $plugins, 'wpeditimage' ) );
-			$to_remove = array_merge( $to_remove, array_keys( $plugins, 'wpgallery' ) );
 			$to_remove = array_merge( $to_remove, array_keys( $plugins, 'wordpress' ) );
 			$to_remove = array_merge( $to_remove, array_keys( $plugins, 'wpfullscreen' ) );
 
