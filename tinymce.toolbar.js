@@ -51,11 +51,11 @@ tinymce.PluginManager.add( 'toolbar', function( editor ) {
 	}
 
 	editor.on( 'PreInit', function() {
-		var inlineToolbar = editor.settings.inlineToolbar || 'bold italic strikethrough link unlink blockquote h2 h3',
-			toolbarItems = [], buttonGroup;
+		var toolbarItems = [],
+			buttonGroup;
 
 		// See theme.js
-		each( inlineToolbar.split( /[ ,]/ ), function( item ) {
+		each( settings.inlineToolbar, function( item ) {
 			var itemName;
 
 			function bindSelectorChanged() {

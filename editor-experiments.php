@@ -81,6 +81,7 @@ if ( ! class_exists( 'Editor_Experiments' ) ) {
 			global $_shortcodes, $wp_scripts;
 
 			$init['_shortcodes'] = json_encode( $_shortcodes );
+			$init['inlineToolbar'] = json_encode( apply_filters( 'mce_buttons_inline', array( 'bold', 'italic', 'strikethrough', 'link', 'unlink', 'blockquote', 'h2', 'h3' ) ) );
 
 			return $init;
 		}
