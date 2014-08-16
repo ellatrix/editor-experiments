@@ -3,10 +3,12 @@
 tinymce.PluginManager.add( 'toolbar', function( editor ) {
 
 	var each = tinymce.each,
+		Factory = tinymce.ui.Factory,
 		dom = tinymce.DOM,
+		settings = editor.settings,
 		toolbar;
 
-	editor.on( 'keyup mouseup', function() {
+	editor.on( 'keyup mouseup nodechange', function() {
 		if ( editor.selection.isCollapsed() ) {
 			toolbar.hide();
 			return;
@@ -52,33 +54,131 @@ tinymce.PluginManager.add( 'toolbar', function( editor ) {
 		var inlineToolbar = editor.settings.inlineToolbar || 'bold italic strikethrough link unlink blockquote h2 h3',
 			buttons = [];
 
-		each( inlineToolbar.split( /[ ,]/ ), function( name ) {
-			var item = editor.buttons[name],
-				button;
-			if ( item ) {
-				item.type = item.type || 'button';
-				item.tooltip = false;
+		var toolbarItems = [], buttonGroup;
 
-				if ( name === 'link' ) {
-					item.onPostRender = function() {
-						var self = this;
+		// See theme.js
+		each( inlineToolbar.split( /[ ,]/ ), function( item ) {
+			var itemName;
 
-						editor.on( 'NodeChange', function( event ) {
-							self.active( getParent( event.element, 'A' ) );
-						} );
-					};
-				} else if ( name === 'unlink' ) {
-					item.onPostRender = function() {
-						var self = this;
+			function bindSelectorChanged() {
+				var selection = editor.selection;
 
-						editor.on( 'NodeChange', function( event ) {
-							self.disabled( event.element.nodeName !== 'A' && editor.selection.getContent().indexOf( '<a' ) === -1 );
-						} );
-					};
+				if ( itemName === 'bullist' ) {
+					selection.selectorChanged( 'ul > li', function( state, args ) {
+						var nodeName,
+							i = args.parents.length;
+
+						while ( i-- ) {
+							nodeName = args.parents[ i ].nodeName;
+
+							if ( nodeName === 'OL' || nodeName === 'UL' ) {
+								break;
+							}
+						}
+
+						item.active( state && nodeName === 'UL' );
+					} );
 				}
 
-				button = tinymce.ui.Factory.create( item );
-				buttons.push( button );
+				if ( itemName === 'numlist' ) {
+					selection.selectorChanged( 'ol > li', function(state, args) {
+						var nodeName,
+							i = args.parents.length;
+
+						while ( i-- ) {
+							nodeName = args.parents[ i ].nodeName;
+
+							if ( nodeName === 'OL' || nodeName === 'UL' ) {
+								break;
+							}
+						}
+
+						item.active( state && nodeName == 'OL' );
+					} );
+				}
+
+				if ( item.settings.stateSelector ) {
+					selection.selectorChanged( item.settings.stateSelector, function( state ) {
+						item.active( state );
+					}, true );
+				}
+
+				if ( item.settings.disabledStateSelector ) {
+					selection.selectorChanged( item.settings.disabledStateSelector, function( state ) {
+						item.disabled( state );
+					} );
+				}
+			}
+
+			if ( item === '|' ) {
+				buttonGroup = null;
+			} else {
+				if ( Factory.has( item ) ) {
+					item = {
+						type: item
+					};
+
+					if ( settings.toolbar_items_size ) {
+						item.size = settings.toolbar_items_size;
+					}
+
+					toolbarItems.push( item );
+					buttonGroup = null;
+				} else {
+					if ( ! buttonGroup ) {
+						buttonGroup = {
+							type: 'buttongroup',
+							items: []
+						};
+						toolbarItems.push( buttonGroup );
+					}
+
+					if ( editor.buttons[ item ] ) {
+						itemName = item;
+						item = editor.buttons[ itemName ];
+
+						if ( typeof( item ) === 'function' ) {
+							item = item();
+						}
+
+						item.type = item.type || 'button';
+
+						if ( settings.toolbar_items_size ) {
+							item.size = settings.toolbar_items_size;
+						}
+
+						// Start customisation.
+						item.tooltip = false;
+
+						if ( itemName === 'link' ) {
+							item.onPostRender = function() {
+								var self = this;
+
+								editor.on( 'NodeChange', function( event ) {
+									self.active( getParent( event.element, 'A' ) );
+								} );
+							};
+						} else if ( itemName === 'unlink' ) {
+							item.onPostRender = function() {
+								var self = this;
+
+								editor.on( 'NodeChange', function( event ) {
+									self.disabled( event.element.nodeName !== 'A' && editor.selection.getContent().indexOf( '<a' ) === -1 );
+								} );
+							};
+						}
+						// End customisation.
+
+						item = Factory.create( item );
+						buttonGroup.items.push( item );
+
+						if ( editor.initialized ) {
+							bindSelectorChanged();
+						} else {
+							editor.on( 'init', bindSelectorChanged );
+						}
+					}
+				}
 			}
 		} );
 
@@ -91,10 +191,7 @@ tinymce.PluginManager.add( 'toolbar', function( editor ) {
 			items: {
 				type: 'toolbar',
 				layout: 'flow',
-				items: {
-					type: 'buttongroup',
-					items: buttons
-				}
+				items: toolbarItems
 			}
 		} );
 
@@ -137,9 +234,9 @@ tinymce.PluginManager.add( 'toolbar', function( editor ) {
 
 			dom.setStyles( toolbarEl, { 'left': left, 'top': top } );
 
-			setTimeout( function() {
+			// setTimeout( function() {
 				dom.addClass( toolbarEl, 'mce-inline-toolbar-active' );
-			}, 100 );
+			// }, 100 );
 
 			return this;
 		};
