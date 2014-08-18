@@ -1,10 +1,9 @@
 /* global tinymce */
 
 tinymce.PluginManager.add( 'toolbar', function( editor ) {
-
 	var each = tinymce.each,
 		Factory = tinymce.ui.Factory,
-		dom = tinymce.DOM,
+		DOM = tinymce.DOM,
 		settings = editor.settings,
 		toolbar;
 
@@ -24,7 +23,7 @@ tinymce.PluginManager.add( 'toolbar', function( editor ) {
 					element.id !== 'wp-title' &&
 					! editor.wp.getView( element ) ) {
 				if ( toolbar._visible ) {
-					toolbar.setPos();
+					toolbar.reposition();
 				} else {
 					toolbar.show();
 				}
@@ -38,208 +37,97 @@ tinymce.PluginManager.add( 'toolbar', function( editor ) {
 		toolbar.hide();
 	} );
 
-	function getParent( node, nodeName ) {
-		while ( node ) {
-			if ( node.nodeName === nodeName ) {
-				return node;
-			}
-
-			node = node.parentNode;
-		}
-
-		return false;
-	}
-
 	editor.on( 'PreInit', function() {
-		var toolbarItems = [],
-			buttonGroup;
-
-		// See theme.js
-		each( settings.inlineToolbar, function( item ) {
-			var itemName;
-
-			function bindSelectorChanged() {
-				var selection = editor.selection;
-
-				if ( itemName === 'bullist' ) {
-					selection.selectorChanged( 'ul > li', function( state, args ) {
-						var nodeName,
-							i = args.parents.length;
-
-						while ( i-- ) {
-							nodeName = args.parents[ i ].nodeName;
-
-							if ( nodeName === 'OL' || nodeName === 'UL' ) {
-								break;
-							}
-						}
-
-						item.active( state && nodeName === 'UL' );
-					} );
-				}
-
-				if ( itemName === 'numlist' ) {
-					selection.selectorChanged( 'ol > li', function(state, args) {
-						var nodeName,
-							i = args.parents.length;
-
-						while ( i-- ) {
-							nodeName = args.parents[ i ].nodeName;
-
-							if ( nodeName === 'OL' || nodeName === 'UL' ) {
-								break;
-							}
-						}
-
-						item.active( state && nodeName == 'OL' );
-					} );
-				}
-
-				if ( item.settings.stateSelector ) {
-					selection.selectorChanged( item.settings.stateSelector, function( state ) {
-						item.active( state );
-					}, true );
-				}
-
-				if ( item.settings.disabledStateSelector ) {
-					selection.selectorChanged( item.settings.disabledStateSelector, function( state ) {
-						item.disabled( state );
-					} );
-				}
-			}
-
-			if ( item === '|' ) {
-				buttonGroup = null;
-			} else {
-				if ( Factory.has( item ) ) {
-					item = {
-						type: item
-					};
-
-					if ( settings.toolbar_items_size ) {
-						item.size = settings.toolbar_items_size;
-					}
-
-					toolbarItems.push( item );
-					buttonGroup = null;
-				} else {
-					if ( ! buttonGroup ) {
-						buttonGroup = {
-							type: 'buttongroup',
-							items: []
-						};
-						toolbarItems.push( buttonGroup );
-					}
-
-					if ( editor.buttons[ item ] ) {
-						itemName = item;
-						item = editor.buttons[ itemName ];
-
-						if ( typeof( item ) === 'function' ) {
-							item = item();
-						}
-
-						item.type = item.type || 'button';
-
-						if ( settings.toolbar_items_size ) {
-							item.size = settings.toolbar_items_size;
-						}
-
-						// Start customisation.
-						item.tooltip = false;
-
-						if ( itemName === 'link' ) {
-							item.onPostRender = function() {
-								var self = this;
-
-								editor.on( 'NodeChange', function( event ) {
-									self.active( getParent( event.element, 'A' ) );
-								} );
-							};
-						} else if ( itemName === 'unlink' ) {
-							item.onPostRender = function() {
-								var self = this;
-
-								editor.on( 'NodeChange', function( event ) {
-									self.disabled( event.element.nodeName !== 'A' && editor.selection.getContent().indexOf( '<a' ) === -1 );
-								} );
-							};
-						}
-						// End customisation.
-
-						item = Factory.create( item );
-						buttonGroup.items.push( item );
-
-						if ( editor.initialized ) {
-							bindSelectorChanged();
-						} else {
-							editor.on( 'init', bindSelectorChanged );
-						}
-					}
-				}
-			}
-		} );
-
-		toolbar = tinymce.ui.Factory.create( {
-			type: 'panel',
+		toolbar = Factory.create( {
+			type: 'floatpanel',
+			role: 'application',
+			classes: 'inline-toolbar-grp',
 			layout: 'stack',
-			classes: 'inline-toolbar-grp popover',
-			ariaRoot: true,
-			ariaRemember: true,
-			items: {
-				type: 'toolbar',
-				layout: 'flow',
-				items: toolbarItems
-			}
+			autohide: true,
+			items: [
+				{
+					type: 'toolbar',
+					layout: 'flow',
+					items: editor.toolbarItems( settings.inlineToolbar )
+				}
+			]
 		} );
 
 		toolbar.on( 'show', function() {
-			this.setPos();
+			this.reposition();
+			DOM.addClass( this.getEl(), 'mce-inline-toolbar-active' );
 		} );
 
 		toolbar.on( 'hide', function() {
-			dom.removeClass( this.getEl(), 'mce-inline-toolbar-active' );
+			DOM.removeClass( this.getEl(), 'mce-inline-toolbar-active' );
 		} );
 
-		dom.bind( window, 'resize', function() {
+		DOM.bind( window, 'resize', function() {
 			toolbar.hide();
 		} );
 
-		toolbar.setPos = function() {
+		toolbar.reposition = function() {
 			var toolbarEl = this.getEl(),
 				boundary = editor.selection.getRng().getBoundingClientRect(),
 				boundaryMiddle = ( boundary.left + boundary.right ) / 2,
-				toolbarHalf = toolbarEl.offsetWidth / 2,
-				margin = parseInt( dom.getStyle( toolbarEl, 'margin-bottom', true ), 10),
-				top, left, iFramePos;
+				windowWidth = window.innerWidth,
+				toolbarWidth, toolbarHalf,
+				margin = parseInt( DOM.getStyle( toolbarEl, 'margin-bottom', true ), 10),
+				top, left, className, iFramePos;
+
+			toolbarEl.className = ( ' ' + toolbarEl.className + ' ' ).replace( /\smce-arrow-\S+\s/g, ' ' ).slice( 1, -1 );
+
+			toolbarWidth = toolbarEl.offsetWidth;
+			toolbarHalf = toolbarWidth / 2;
 
 			if ( boundary.top < toolbarEl.offsetHeight ) {
-				dom.addClass( toolbarEl, 'mce-inline-toolbar-arrow-up' );
-				dom.removeClass( toolbarEl, 'mce-inline-toolbar-arrow-down' );
+				className = ' mce-arrow-up';
 				top = boundary.bottom + margin;
 			} else {
-				dom.addClass( toolbarEl, 'mce-inline-toolbar-arrow-down' );
-				dom.removeClass( toolbarEl, 'mce-inline-toolbar-arrow-up' );
+				className = ' mce-arrow-down';
 				top = boundary.top - toolbarEl.offsetHeight - margin;
 			}
 
 			left = boundaryMiddle - toolbarHalf;
 
-			iFramePos = dom.getPos( editor.getContentAreaContainer().querySelector( 'iframe' ) );
+			iFramePos = DOM.getPos( editor.getContentAreaContainer().querySelector( 'iframe' ) );
 
 			top = top + iFramePos.y;
-			left = ( ( left + iFramePos.x ) > 0 ) ? left + iFramePos.x : 0;
+			left = left + iFramePos.x;
 
-			dom.setStyles( toolbarEl, { 'left': left, 'top': top } );
+			if ( toolbarWidth >= windowWidth ) {
+				className += ' mce-arrow-full';
+				left = 0;
+			} else if ( ( left < 0 && boundary.left + toolbarWidth > windowWidth ) || ( left + toolbarWidth > windowWidth && boundary.right - toolbarWidth < 0 ) ) {
+				left = ( windowWidth - toolbarWidth ) / 2;
+			} else if ( left < 0 ) {
+				className += ' mce-arrow-left';
+				left = boundary.left;
+				left = left + iFramePos.x;
+			} else if ( left + toolbarWidth > windowWidth ) {
+				className += ' mce-arrow-right';
+				left = boundary.right - toolbarWidth;
+				left = left + iFramePos.x;
+			}
 
-			// setTimeout( function() {
-				dom.addClass( toolbarEl, 'mce-inline-toolbar-active' );
-			// }, 100 );
+			toolbarEl.className += className;
+
+			DOM.setStyles( toolbarEl, { 'left': left, 'top': top } );
 
 			return this;
 		};
 
 		toolbar.renderTo( document.body ).hide();
+
+		editor.shortcuts.add( 'Alt+F8', '', function() {
+			var item = toolbar.find( 'toolbar' )[0];
+
+			item && item.focus( true );
+		} );
+
+		toolbar.on( 'cancel', function() {
+			editor.focus();
+		} );
 
 		editor.inlineToolbar = toolbar;
 	} );

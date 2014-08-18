@@ -82,6 +82,7 @@ if ( ! class_exists( 'Editor_Experiments' ) ) {
 
 			$init['_shortcodes'] = json_encode( $_shortcodes );
 			$init['inlineToolbar'] = json_encode( apply_filters( 'mce_buttons_inline', array( 'bold', 'italic', 'strikethrough', 'link', 'unlink', 'blockquote', 'h2', 'h3' ) ) );
+			$init['blocks'] = json_encode( apply_filters( 'mce_blocks', array( 'wp_image', 'wp_gallery', 'wp_audio', 'wp_audio_playlist', 'wp_video', 'wp_video_playlist', 'hr', 'wp_more', 'wp_page' ) ) );
 
 			return $init;
 		}
